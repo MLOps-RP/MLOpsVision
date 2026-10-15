@@ -58,6 +58,7 @@ class ActionMode(StrEnum):
 class RuleKind(StrEnum):
     CRITICAL = "critical"  # overrides the MQS
     EVIDENCE = "evidence"  # missing or insufficient evidence
+    BLOCKING = "blocking"  # a must-pass check did not pass
     SCORE = "score"        # MQS threshold bands
 
 

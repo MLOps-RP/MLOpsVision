@@ -15,37 +15,12 @@ from mqvg.scoring import compute_scorecard
 
 from conftest import CONFIGS, DATA, FIXTURES
 
+from builders import (  # noqa: E402
+    ERROR, NA, UNAVAILABLE, enabled_ids, make_results,
+)
+
 TV, MB, OR = (Dimension.TRAINING_VALIDITY, Dimension.MODEL_BEHAVIOUR,
               Dimension.OPERATIONAL_READINESS)
-NA = "NOT_APPLICABLE"
-UNAVAILABLE = "UNAVAILABLE"
-ERROR = "ERROR"
-
-
-def enabled_ids(config):
-    return [i for i, c in config.checks.items() if c.enabled]
-
-
-def make_results(config, base=100.0, scores=None, per_dimension=None):
-    """One result per enabled check. `scores` maps check id -> a 0-100 score or
-    one of "UNAVAILABLE", "ERROR", "NOT_APPLICABLE"; `per_dimension` sets a
-    default score for a whole dimension."""
-    scores, per_dimension = scores or {}, per_dimension or {}
-    results = []
-    for check_id in enabled_ids(config):
-        spec = CHECKS_BY_ID[check_id]
-        value = scores.get(check_id, per_dimension.get(spec.dimension, base))
-        common = dict(id=check_id, dimension=spec.dimension, name=check_id,
-                      message="m")
-        if isinstance(value, str):
-            status = CheckStatus(value)
-            results.append(CheckResult(**common, status=status, score=None,
-                                       evidence_source=EvidenceSource.UNAVAILABLE))
-        else:
-            results.append(CheckResult(**common, status=CheckStatus.PASS,
-                                       score=float(value),
-                                       evidence_source=EvidenceSource.MEASURED))
-    return results
 
 
 def score(config, **kwargs):

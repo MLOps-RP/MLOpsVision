@@ -204,3 +204,46 @@ Findings (use these in the thesis):
    analysis over weights and thresholds before relying on any cutoff.
 5. **Dimension weights are a modelling choice** (0.30 / 0.50 / 0.20 here). They
    need justification and a sensitivity analysis.
+
+## Rules engine (Step 11)
+
+Decisions on the sample fixtures (default profile; thresholds were not tuned
+to fit the manifest, which was written first):
+
+| Fixture | MQS | Decision | Why |
+|---|---|---|---|
+| good | 86.9 | PROMOTE | meets the threshold, all must-pass checks pass |
+| leaky | 83.8 | ROLLBACK | critical `target_leakage`; MQS alone would PROMOTE |
+| biased | 75.4 | ROLLBACK | critical `severe_selection_rate_disparity`; MQS alone would PROMOTE |
+| corrupt | 99.9 (at worst 22.5) | ROLLBACK | critical `model_not_loadable` |
+| overfit | 71.9 | HOLD | must-pass overfit gap and calibration fail |
+| miscalibrated | 80.3 | HOLD | must-pass calibration fails |
+| good_incomplete_metadata | 79.7 | HOLD | must-pass metadata completeness and overfit gap |
+| good_no_sensitive | 93.8 (at worst 74.8) | HOLD | required fairness evidence missing; coverage 79% < 80% |
+| slow | 85.9 | PROMOTE or HOLD | HOLD only if single-row latency exceeds 50 ms on the validating machine |
+
+Findings and open decisions:
+
+1. **Hardware-dependent outcome.** `slow` was 35 ms p95 on an idle machine (PASS)
+   and 70-110 ms when busy (WARN). The manifest originally said HOLD; it now
+   says HOLD or PROMOTE, and a test checks both the conditional rule and a
+   deterministic HOLD under a tightened limit. Absolute latency limits do not
+   transfer between machines. **OPEN / Phase B:** express the limit relative to a
+   reference model measured on the same machine.
+2. **The strict profile is unattainable for this baseline.** It ROLLBACKs even
+   `good`, because its critical `fail_at` for the selection-rate ratio (0.50)
+   is above what the baseline reaches (0.31). Strict thresholds need to be
+   set from what is achievable on the dataset, or the profile is meaningless.
+3. **`penalize` turns missing evidence into ROLLBACK** (strict: `good_no_sensitive`
+   gets MQS 45.6 < 60). Under `exclude_and_cap` the same case is a HOLD.
+   Missing evidence is "not yet known" in the first and "assumed bad" in the
+   second. **OPEN:** which is right for the deployment decision.
+4. Decisions use the policy MQS, never the lower bound, so that missing
+   evidence leads to HOLD (not ROLLBACK) under `exclude_and_cap`.
+5. `overridden_by_critical` is only true when the score alone would not have
+   produced a ROLLBACK; a critical rule that agrees with a low score is
+   reported but is not an "override".
+6. A must-pass check that is UNAVAILABLE or ERROR blocks PROMOTE (it is not
+   PASS); NOT_APPLICABLE does not. A required check with no evidence blocks too.
+   **OPEN:** the lists of required and must-pass checks are design choices.
+7. A numeric critical rule cannot match a check that has no measured value.

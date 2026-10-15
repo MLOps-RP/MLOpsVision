@@ -445,7 +445,8 @@ def _fixture(name, eval_path=None, metadata=None):
         pytest.skip("fixtures not generated (run scripts/make_fixtures.py)")
     return load_candidate(CandidateBundle(
         model_path=model, eval_data_path=eval_path,
-        metadata_path=FIXTURES / name / "metadata.json"))
+        metadata_path=FIXTURES / name / "metadata.json",
+        train_row_hashes_path=ROOT / "data" / "train_row_hashes.txt"))
 
 
 def test_good_fixture_passes_every_training_validity_check(default_config):
