@@ -105,3 +105,27 @@ Record each threshold or design choice here with its reason. Items marked
 - Results on the fixtures: `good` has selection-rate ratio 0.311 (sex) and
   equalized-odds difference 0.219 (race): WARN under the default thresholds
   and FAIL under strict; `biased` has ratio 0.006 and fails everywhere.
+
+## Calibration and robustness (Step 8)
+
+- ECE uses equal-width bins (`evaluation.ece_bins`, default 10). It depends on
+  the bin count and is biased upward on small samples, so the per-bin counts,
+  max calibration error and Brier score are reported with it. The gate's ECE
+  agrees with a scikit-learn `calibration_curve` reference and with the
+  fixture verifier (good 0.011, miscalibrated 0.240). **OPEN:** justify the
+  ECE thresholds and consider adaptive (equal-mass) bins.
+- Calibration is UNAVAILABLE for models that only give decision-function
+  scores: those are not probabilities.
+- Overfitting is visible through calibration: the `overfit` tree passes F1
+  (0.617) but has ECE 0.185 and fails. Use this when arguing that no single
+  metric is enough.
+- Robustness is a simple sensitivity probe: Gaussian noise on numeric features
+  only, scaled to each feature's spread (0.1x by default), 5 seeded repeats.
+  It ignores valid ranges and feature correlations, does not perturb
+  categorical features, and is not an adversarial or distribution-shift test.
+  It stays **disabled in the default profile**. The good fixture loses only
+  about 0.9% relative F1 at 0.1x noise, so the default level may be too mild
+  to discriminate. **OPEN / Phase B:** more perturbation types and levels,
+  and calibrate the thresholds against known-fragile models.
+- A model with no numeric features gets NOT_APPLICABLE for robustness; a clean
+  F1 of zero makes the relative drop undefined (UNAVAILABLE).

@@ -38,6 +38,14 @@ class EvalPredictions:
 Result = tuple[EvalPredictions | None, str | None]
 
 
+def f1_from_labels(y_true: np.ndarray, y_pred: np.ndarray) -> float | None:
+    """F1 of the positive class; None when it is undefined (no positives at
+    all, true or predicted)."""
+    tp = int(np.sum(y_true & y_pred))
+    denominator = 2 * tp + int(np.sum(~y_true & y_pred)) + int(np.sum(y_true & ~y_pred))
+    return 2 * tp / denominator if denominator else None
+
+
 def prediction_blocker(candidate: LoadedCandidate) -> str | None:
     """Why the model cannot be run on the evaluation data, or None if it can."""
     if candidate.model is None:

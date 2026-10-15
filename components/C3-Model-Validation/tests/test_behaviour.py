@@ -302,13 +302,6 @@ def test_every_behaviour_check_is_registered():
     assert sorted(BEHAVIOUR_CHECKS) == sorted(expected)
 
 
-def test_unimplemented_checks_report_error_never_pass(candidate_with, default_config):
-    results = run(make(candidate_with), default_config)
-    for check_id in ("calibration.ece",):  # robustness is disabled by default
-        assert results[check_id].status == CheckStatus.ERROR
-        assert results[check_id].score is None
-
-
 def test_disabled_behaviour_check_is_not_run(candidate_with, make_config):
     config = make_config(lambda d: d["checks"]["behaviour.recall"].update(
         enabled=False))

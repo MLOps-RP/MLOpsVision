@@ -15,11 +15,13 @@ from mqvg.catalogue import CATALOGUE
 from mqvg.checks.base import (
     CheckContext, CheckFunction, guarded, scored_result, unavailable_result,
 )
+from mqvg.checks.calibration import CALIBRATION_CHECKS
 from mqvg.checks.fairness import FAIRNESS_CHECKS
 from mqvg.checks.predictions import EvalPredictions, get_predictions
+from mqvg.checks.robustness import ROBUSTNESS_CHECKS
 from mqvg.config import GateConfig
 from mqvg.loader import LoadedCandidate
-from mqvg.schemas import CheckResult, CheckStatus, Dimension
+from mqvg.schemas import CheckResult, Dimension
 
 BEHAVIOUR_CHECKS: dict[str, CheckFunction] = {}
 
@@ -147,23 +149,9 @@ def roc_auc(ctx: CheckContext) -> CheckResult:
                  "positive_label_source": predictions.label_source})
 
 
-def _not_implemented(check_id: str) -> CheckFunction:
-    @guarded(check_id)
-    def run(ctx: CheckContext) -> CheckResult:
-        return unavailable_result(
-            ctx, check_id, "This check is not implemented in this version.",
-            status=CheckStatus.ERROR)
-    return run
-
-
 BEHAVIOUR_CHECKS.update(FAIRNESS_CHECKS)
-
-# Catalogue checks of this dimension that later steps will implement. They
-# report ERROR (never PASS) until then.
-for _spec in CATALOGUE:
-    if (_spec.dimension == Dimension.MODEL_BEHAVIOUR
-            and _spec.id not in BEHAVIOUR_CHECKS):
-        BEHAVIOUR_CHECKS[_spec.id] = _not_implemented(_spec.id)
+BEHAVIOUR_CHECKS.update(CALIBRATION_CHECKS)
+BEHAVIOUR_CHECKS.update(ROBUSTNESS_CHECKS)
 
 
 def run_behaviour_checks(candidate: LoadedCandidate,

@@ -132,6 +132,10 @@ class EvaluationConfig(_Strict):
     ece_bins: int = Field(default=10, ge=2)
     latency_warmup_runs: int = Field(default=5, ge=0)
     latency_repeats: int = Field(default=50, ge=1)
+    # Robustness: Gaussian noise with standard deviation
+    # `robustness_noise_scale` x (each numeric feature's own std), repeated.
+    robustness_noise_scale: float = Field(default=0.1, gt=0)
+    robustness_repeats: int = Field(default=5, ge=1)
 
 
 class MetadataConfig(_Strict):
