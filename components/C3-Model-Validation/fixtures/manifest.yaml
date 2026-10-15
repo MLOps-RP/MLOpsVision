@@ -7,7 +7,7 @@
 # these pass; change an expectation only with a written reason.
 #
 # Paths are relative to components/C3-Model-Validation/.
-# Check names are working names and may change when the checks are built.
+# Check ids must exist in src/mqvg/catalogue.py (enforced by tests/test_config.py).
 
 fixtures:
   good:
@@ -30,7 +30,7 @@ fixtures:
       Extra feature prior_high_income_flag equals the true label, flipped for
       3% of rows, in both train and eval.
     expected_decision: ROLLBACK
-    expected_findings: [leakage.single_feature_predictiveness, leakage.dominant_feature]
+    expected_findings: [leakage.single_feature_predictiveness]
     notes: Eval F1 about 0.95 versus 0.66 for good.
 
   overfit:
@@ -94,7 +94,7 @@ fixtures:
       Good model, but 11 metadata fields removed (seed, split, data hash,
       hyperparameters, versions, code commit, training metrics, ...).
     expected_decision: HOLD
-    expected_findings: [training_validity.metadata_completeness, training_validity.reproducibility]
+    expected_findings: [training_validity.metadata_completeness, training_validity.reproducibility_info]
     notes: >
       Unavailable checks must be UNAVAILABLE, never PASS. MQS must be flagged
       provisional with reduced evidence coverage.
@@ -105,5 +105,5 @@ fixtures:
     eval_data: fixtures/good_no_sensitive/eval.csv
     injected_defect: Evaluation data without the sex and race columns.
     expected_decision: HOLD
-    expected_findings: [fairness.unavailable]
+    expected_findings: [fairness.selection_rate_ratio]  # status UNAVAILABLE, not a measured value
     notes: Metadata still declares sensitive columns that eval data lacks.

@@ -1,0 +1,171 @@
+# Default validation profile.
+#
+# IMPORTANT: every number below is an INITIAL placeholder chosen so the sample
+# fixtures behave sensibly. None is a universal standard. Each needs
+# justification (literature, risk tier, baseline comparison, sensitivity
+# analysis) before it is cited in the research; see docs/assumptions.md.
+#
+# Threshold meaning for a non-binary check:
+#   score  = 0 at `floor`, 100 at `target`, linear in between
+#   status = PASS if the value is at least as good as `pass_at`,
+#            FAIL if it is worse than `fail_at`, WARN in between
+# Higher-is-better metrics: floor <= fail_at <= pass_at <= target.
+# Lower-is-better metrics:  floor >= fail_at >= pass_at >= target.
+
+profile: default
+description: Balanced profile used for the standalone prototype.
+
+# W1, W2, W3 of MQS = TVS*W1 + MBS*W2 + ORS*W3. Must sum to 1.
+weights:
+  training_validity: 0.30
+  model_behaviour: 0.50
+  operational_readiness: 0.20
+
+# exclude_and_cap: unavailable checks are left out of the averages and the
+#                  score is marked provisional (never counted as passing).
+# penalize:        unavailable checks score 0.
+missing_policy: exclude_and_cap
+
+coverage:
+  min_dimension: 0.50   # below this a dimension gets no score
+  min_overall: 0.80     # below this PROMOTE is not allowed
+
+decision:
+  promote_at: 75        # MQS at or above (and no blockers) -> PROMOTE
+  reject_below: 50      # MQS below -> ROLLBACK recommendation
+  # A WARN or FAIL on any of these blocks PROMOTE (result is at least HOLD).
+  must_pass_checks:
+    - training_validity.metadata_completeness
+    - training_validity.overfit_gap
+    - calibration.ece
+    - operational.latency
+
+# Any matching rule forces ROLLBACK whatever the MQS is.
+critical_rules:
+  - id: model_not_loadable
+    name: Model artifact cannot be loaded
+    condition:
+      check: operational.model_loadable
+      status_in: [FAIL, ERROR]
+  - id: target_leakage
+    name: Target leakage detected
+    condition:
+      check: leakage.single_feature_predictiveness
+      status_in: [FAIL]
+  - id: severe_selection_rate_disparity
+    name: Severe selection-rate disparity between groups
+    condition:
+      check: fairness.selection_rate_ratio
+      status_in: [FAIL]
+  - id: performance_below_minimum
+    name: F1 below the absolute minimum
+    condition:
+      check: behaviour.f1
+      status_in: [FAIL]
+
+evaluation:
+  random_seed: 42
+  min_group_size: 30      # smaller groups are reported as insufficient data
+  ece_bins: 10
+  latency_warmup_runs: 5
+  latency_repeats: 50
+
+metadata:
+  # Dotted names refer to nested fields of the training metadata.
+  required_fields:
+    - model_type
+    - task_type
+    - target_column
+    - positive_label
+    - sensitive_columns
+    - feature_columns
+    - hyperparameters
+    - training_metrics
+    - train_rows
+    - dataset
+  reproducibility_fields:
+    - random_state
+    - split.seed
+    - versions
+    - train_data_sha256
+    - code.commit
+
+checks:
+  # ---- Training validity -------------------------------------------------
+  training_validity.metadata_completeness:
+    weight: 1
+    thresholds: {target: 1.0, pass_at: 0.9, fail_at: 0.6, floor: 0.0}
+  training_validity.reproducibility_info:
+    weight: 1
+    thresholds: {target: 1.0, pass_at: 0.75, fail_at: 0.5, floor: 0.0}
+  training_validity.overfit_gap:        # needs declared train metrics
+    weight: 2
+    thresholds: {target: 0.01, pass_at: 0.05, fail_at: 0.10, floor: 0.25}
+  training_validity.train_eval_overlap: # needs training row hashes
+    weight: 1
+    # Adult has ~0.12% natural duplicates; see docs/assumptions.md.
+    thresholds: {target: 0.0, pass_at: 0.01, fail_at: 0.05, floor: 0.20}
+  leakage.single_feature_predictiveness:
+    weight: 3
+    required: true        # measurable from the eval data alone
+    thresholds: {target: 0.80, pass_at: 0.90, fail_at: 0.95, floor: 1.0}
+
+  # ---- Model behaviour ---------------------------------------------------
+  behaviour.f1:
+    weight: 2
+    required: true
+    thresholds: {target: 0.80, pass_at: 0.60, fail_at: 0.45, floor: 0.0}
+  behaviour.roc_auc:
+    weight: 2
+    required: true
+    thresholds: {target: 0.95, pass_at: 0.85, fail_at: 0.70, floor: 0.5}
+  behaviour.precision:
+    weight: 1
+    thresholds: {target: 0.85, pass_at: 0.65, fail_at: 0.45, floor: 0.0}
+  behaviour.recall:
+    weight: 1
+    thresholds: {target: 0.80, pass_at: 0.55, fail_at: 0.35, floor: 0.0}
+  behaviour.subgroup_f1_gap:
+    weight: 1
+    thresholds: {target: 0.02, pass_at: 0.10, fail_at: 0.25, floor: 0.50}
+  fairness.selection_rate_ratio:
+    weight: 2
+    required: true        # fairness cannot be assumed; missing data -> HOLD
+    # 0.8 echoes the "four-fifths rule"; a looser pass_at is used here so a
+    # realistic baseline gets WARN rather than FAIL. OPEN: justify.
+    thresholds: {target: 0.90, pass_at: 0.50, fail_at: 0.20, floor: 0.0}
+  fairness.equalized_odds:
+    weight: 1
+    thresholds: {target: 0.02, pass_at: 0.10, fail_at: 0.25, floor: 0.50}
+  calibration.ece:
+    weight: 1.5
+    thresholds: {target: 0.01, pass_at: 0.05, fail_at: 0.10, floor: 0.25}
+  robustness.noise_degradation:
+    enabled: false        # Phase A prototype leaves robustness off
+    weight: 1
+    thresholds: {target: 0.01, pass_at: 0.05, fail_at: 0.15, floor: 0.40}
+
+  # ---- Operational readiness --------------------------------------------
+  operational.model_loadable:
+    weight: 3
+    required: true
+  operational.input_schema:
+    weight: 2
+    required: true
+  operational.prediction_determinism:
+    weight: 1
+  operational.malformed_input_handling:
+    weight: 1
+  operational.artifact_size:
+    weight: 1
+    thresholds: {target: 10, pass_at: 100, fail_at: 500, floor: 2000}
+  operational.latency:
+    weight: 2
+    # Hardware dependent: record the machine profile with results.
+    thresholds: {target: 10, pass_at: 50, fail_at: 200, floor: 1000}
+  operational.memory:
+    weight: 1
+    thresholds: {target: 100, pass_at: 500, fail_at: 2000, floor: 8000}
+  operational.dependency_match:
+    weight: 1
+    thresholds: {target: 1.0, pass_at: 0.8, fail_at: 0.5, floor: 0.0}

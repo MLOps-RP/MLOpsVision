@@ -1,0 +1,79 @@
+# Strict profile for higher-risk models: starts from the default and
+# tightens it. Only differences are listed, which makes the contrast between
+# profiles easy to read (and to use in a sensitivity analysis).
+#
+# Mappings are merged into the default; lists (critical_rules, must_pass_checks)
+# replace the default's list, so they are restated in full.
+extends: default.yaml
+
+profile: strict
+description: Tighter thresholds, stricter evidence, penalized missing checks.
+
+weights:
+  training_validity: 0.35
+  model_behaviour: 0.50
+  operational_readiness: 0.15
+
+missing_policy: penalize
+
+coverage:
+  min_dimension: 0.75
+  min_overall: 0.95
+
+decision:
+  promote_at: 85
+  reject_below: 60
+  must_pass_checks:
+    - training_validity.metadata_completeness
+    - training_validity.reproducibility_info
+    - training_validity.overfit_gap
+    - training_validity.train_eval_overlap
+    - fairness.equalized_odds
+    - calibration.ece
+    - operational.latency
+
+critical_rules:
+  - id: model_not_loadable
+    name: Model artifact cannot be loaded
+    condition:
+      check: operational.model_loadable
+      status_in: [FAIL, ERROR]
+  - id: target_leakage
+    name: Target leakage detected
+    condition:
+      check: leakage.single_feature_predictiveness
+      status_in: [FAIL]
+  - id: severe_selection_rate_disparity
+    name: Severe selection-rate disparity between groups
+    condition:
+      check: fairness.selection_rate_ratio
+      status_in: [FAIL]
+  - id: equalized_odds_violation
+    name: Equalized-odds violation
+    condition:
+      check: fairness.equalized_odds
+      status_in: [FAIL]
+  - id: performance_below_minimum
+    name: F1 below the absolute minimum
+    condition:
+      check: behaviour.f1
+      status_in: [FAIL]
+  - id: severe_miscalibration
+    name: Probabilities badly calibrated
+    condition:
+      check: calibration.ece
+      status_in: [FAIL]
+
+checks:
+  training_validity.overfit_gap:
+    required: true
+  fairness.selection_rate_ratio:
+    thresholds: {target: 0.95, pass_at: 0.80, fail_at: 0.50, floor: 0.0}
+  fairness.equalized_odds:
+    required: true
+  behaviour.f1:
+    thresholds: {target: 0.85, pass_at: 0.70, fail_at: 0.55, floor: 0.0}
+  calibration.ece:
+    thresholds: {target: 0.01, pass_at: 0.03, fail_at: 0.07, floor: 0.20}
+  operational.latency:
+    thresholds: {target: 10, pass_at: 30, fail_at: 100, floor: 500}
