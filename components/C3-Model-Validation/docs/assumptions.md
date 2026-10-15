@@ -247,3 +247,25 @@ Findings and open decisions:
    PASS); NOT_APPLICABLE does not. A required check with no evidence blocks too.
    **OPEN:** the lists of required and must-pass checks are design choices.
 7. A numeric critical rule cannot match a check that has no measured value.
+
+## Pipeline (Step 12)
+
+- `run_validation(bundle, config)` is the single entry point: load -> three
+  check groups -> scorecard -> rules -> `ValidationResult`. It is what the CLI
+  and the API will wrap (Step 14); neither may contain validation logic.
+- **Contract:** a bad candidate never raises; it produces findings and a
+  decision (even a candidate where nothing exists gives a ROLLBACK result).
+  Only an unusable configuration raises `ConfigError`. A crashing check becomes
+  an ERROR result; a crashing check group makes all of that dimension's
+  enabled checks ERROR. ERROR is never a pass and blocks a required or
+  must-pass check from allowing PROMOTE.
+- **Reproducibility:** identical inputs and config give an identical result
+  except `run_id`, `created_at_utc`, `environment` (machine profile, timings)
+  and the machine-dependent latency/memory checks. A test compares two runs
+  exactly with those two checks switched off.
+- A full run on the sample fixtures takes about 0.7 s (the leakage probe is
+  the largest part).
+- `ValidationResult.explanations` is still empty: the failure explanation and
+  the readable report are Step 13.
+- Security: the model file is unpickled in the validating process. Run the
+  gate only on models from trusted sources; process isolation is Phase B.
