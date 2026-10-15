@@ -15,6 +15,7 @@ from mqvg.schemas import (
 )
 
 from conftest import DATA, FEATURES, FIXTURES
+from stubs import DecisionOnly, Scripted, ScriptedNoProba
 
 NEG, POS = "<=50K", ">50K"
 IMPLEMENTED = ["behaviour.f1", "behaviour.roc_auc", "behaviour.precision",
@@ -28,40 +29,6 @@ SCORE = [0.9, 0.8, 0.7, 0.4, 0.6, 0.55, 0.3, 0.2, 0.1, 0.05]
 EXPECTED = {"precision": 0.6, "recall": 0.75, "f1": 2 * 0.6 * 0.75 / 1.35,
             # 22 of the 4*6=24 positive/negative pairs are ranked correctly
             "roc_auc": 22 / 24}
-
-
-class Scripted:
-    """A model that returns prescribed predictions, looked up by row index."""
-    feature_names_in_ = np.array(FEATURES)
-
-    def __init__(self, pred, score=None, classes=(NEG, POS), label=lambda v: v):
-        self.pred = pd.Series(pred)
-        self.score = None if score is None else pd.Series(score, dtype=float)
-        self.classes_ = np.array(classes)
-        self.label = label
-        self.predict_calls = 0
-
-    def predict(self, X):
-        self.predict_calls += 1
-        return np.array([self.label(v) for v in self.pred.loc[X.index]])
-
-    def predict_proba(self, X):
-        if self.score is None:
-            raise AttributeError("no scores")
-        s = self.score.loc[X.index].to_numpy()
-        return np.column_stack([1 - s, s])
-
-
-class ScriptedNoProba(Scripted):
-    def __getattribute__(self, name):
-        if name == "predict_proba":
-            raise AttributeError(name)
-        return super().__getattribute__(name)
-
-
-class DecisionOnly(ScriptedNoProba):
-    def decision_function(self, X):
-        return self.score.loc[X.index].to_numpy() - 0.5
 
 
 def frame(true=TRUE, pos=POS, neg=NEG):
@@ -337,8 +304,7 @@ def test_every_behaviour_check_is_registered():
 
 def test_unimplemented_checks_report_error_never_pass(candidate_with, default_config):
     results = run(make(candidate_with), default_config)
-    for check_id in ("fairness.selection_rate_ratio", "calibration.ece",
-                     "behaviour.subgroup_f1_gap", "fairness.equalized_odds"):
+    for check_id in ("calibration.ece",):  # robustness is disabled by default
         assert results[check_id].status == CheckStatus.ERROR
         assert results[check_id].score is None
 

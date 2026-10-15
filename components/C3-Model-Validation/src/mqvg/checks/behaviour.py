@@ -15,6 +15,7 @@ from mqvg.catalogue import CATALOGUE
 from mqvg.checks.base import (
     CheckContext, CheckFunction, guarded, scored_result, unavailable_result,
 )
+from mqvg.checks.fairness import FAIRNESS_CHECKS
 from mqvg.checks.predictions import EvalPredictions, get_predictions
 from mqvg.config import GateConfig
 from mqvg.loader import LoadedCandidate
@@ -154,6 +155,8 @@ def _not_implemented(check_id: str) -> CheckFunction:
             status=CheckStatus.ERROR)
     return run
 
+
+BEHAVIOUR_CHECKS.update(FAIRNESS_CHECKS)
 
 # Catalogue checks of this dimension that later steps will implement. They
 # report ERROR (never PASS) until then.

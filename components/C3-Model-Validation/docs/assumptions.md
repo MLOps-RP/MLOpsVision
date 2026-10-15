@@ -78,3 +78,30 @@ Record each threshold or design choice here with its reason. Items marked
   0.0 with `precision_undefined` set.
 - Behaviour checks that are not built yet (fairness, calibration, subgroup,
   robustness) report ERROR with "not implemented", never PASS, until their step.
+
+## Fairness and subgroup checks (Step 7)
+
+- Metrics are computed in the gate (so small groups and undefined rates can be
+  handled explicitly) and cross-checked against Fairlearn in the tests
+  (`demographic_parity_ratio/difference`, `equalized_odds_difference`,
+  `MetricFrame` F1 difference): they agree on random 3-group data and the
+  fixtures.
+- Groups smaller than `evaluation.min_group_size` (default 30) are excluded
+  and listed. **OPEN:** justify the minimum; a statistical-power argument
+  would be better than a round number. Confidence intervals are not computed
+  yet, so a gap from groups of ~30 is noisy. **Phase B.**
+- Only the declared sensitive columns are examined, one at a time.
+  Intersectional groups (for example sex x race) and non-sensitive slices
+  are left to hidden-failure discovery (Phase B).
+- Declared columns missing from the evaluation data are skipped and named in
+  the message; if none can be evaluated the check is UNAVAILABLE. A partial
+  result (one column evaluated, another skipped) is still scored, with the
+  skipped column recorded in the details. **OPEN:** should a skipped declared
+  column cap the score or block PROMOTE?
+- If no group receives a positive prediction, the selection-rate ratio is
+  vacuous; it is reported as 1.0 and flagged. A model that predicts nothing is
+  "equal" across groups, so rely on F1/recall to catch it.
+- `behaviour.subgroup_f1_gap` currently uses sensitive-attribute groups only.
+- Results on the fixtures: `good` has selection-rate ratio 0.311 (sex) and
+  equalized-odds difference 0.219 (race): WARN under the default thresholds
+  and FAIL under strict; `biased` has ratio 0.006 and fails everywhere.

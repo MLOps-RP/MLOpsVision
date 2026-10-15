@@ -119,6 +119,7 @@ class CandidateBundle(_Strict):
     # validated even when its metadata is incomplete.
     target_column: str | None = None
     positive_label: str | int | bool | None = None
+    sensitive_columns: list[str] | None = None
     scenario: ScenarioInfo = Field(default_factory=ScenarioInfo)
 
 

@@ -67,6 +67,15 @@ class LoadedCandidate:
         return None
 
     @property
+    def sensitive_columns(self) -> list[str] | None:
+        """Bundle override first, then the metadata; None if undeclared."""
+        if self.bundle.sensitive_columns is not None:
+            return list(self.bundle.sensitive_columns)
+        if self.metadata is not None and self.metadata.sensitive_columns:
+            return list(self.metadata.sensitive_columns)
+        return None
+
+    @property
     def positive_label(self) -> str | int | bool | None:
         """Bundle override first, then the metadata; None if undeclared."""
         if self.bundle.positive_label is not None:
