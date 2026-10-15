@@ -1,0 +1,109 @@
+# Ground truth for the gate's scenario tests.
+#
+# `injected_defect` is what was really done to the fixture (known because we
+# built it). `expected_decision` and `expected_findings` are PROVISIONAL
+# design intent: they must be re-confirmed once the gate's thresholds and
+# rules are configured and justified. Do not tune thresholds just to make
+# these pass; change an expectation only with a written reason.
+#
+# Paths are relative to components/C3-Model-Validation/.
+# Check names are working names and may change when the checks are built.
+
+fixtures:
+  good:
+    model: fixtures/good/model.joblib
+    metadata: fixtures/good/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: none
+    expected_decision: PROMOTE
+    expected_findings: []
+    notes: >
+      Not perfectly fair (selection rates 7.8% female vs 24.9% male, parity
+      difference 0.171). Fairness thresholds decide whether this is a WARN
+      or a PASS; record that choice in docs/assumptions.md.
+
+  leaky:
+    model: fixtures/leaky/model.joblib
+    metadata: fixtures/leaky/metadata.json
+    eval_data: fixtures/leaky/eval.csv
+    injected_defect: >
+      Extra feature prior_high_income_flag equals the true label, flipped for
+      3% of rows, in both train and eval.
+    expected_decision: ROLLBACK
+    expected_findings: [leakage.single_feature_predictiveness, leakage.dominant_feature]
+    notes: Eval F1 about 0.95 versus 0.66 for good.
+
+  overfit:
+    model: fixtures/overfit/model.joblib
+    metadata: fixtures/overfit/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: Unconstrained decision tree (max_depth=None).
+    expected_decision: HOLD
+    expected_findings: [training_validity.overfit_gap]
+    notes: Train accuracy 1.00 versus eval 0.815. Depends on declared train metrics.
+
+  biased:
+    model: fixtures/biased/model.joblib
+    metadata: fixtures/biased/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: >
+      95% of positive training labels for Female rows relabelled negative;
+      sex and race used as model features. The fixture metadata does not
+      disclose this, as a real producer's metadata would not.
+    expected_decision: ROLLBACK
+    expected_findings: [fairness.selection_rate_ratio, fairness.equalized_odds]
+    notes: >
+      Parity DIFFERENCE only rises from 0.171 to 0.249 because it is capped by
+      the male selection rate. The selection-rate RATIO collapses from 0.31 to
+      0.006. Include a ratio-based or equalized-odds metric.
+
+  miscalibrated:
+    model: fixtures/miscalibrated/model.joblib
+    metadata: fixtures/miscalibrated/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: Positive class weighted 8x, inflating predicted probabilities.
+    expected_decision: HOLD
+    expected_findings: [calibration.ece]
+    notes: ECE 0.240 versus 0.011 for good; ROC-AUC differs by 0.001.
+
+  slow:
+    model: fixtures/slow/model.joblib
+    metadata: fixtures/slow/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: Random forest, 1000 trees, depth 14 (113 MB artifact).
+    expected_decision: HOLD
+    expected_findings: [operational.latency, operational.artifact_size]
+    notes: >
+      Measured about 71 ms single-row versus 6.6 ms for good on the development
+      machine. Latency is hardware dependent; record the machine profile.
+
+  corrupt:
+    model: fixtures/corrupt/model.joblib
+    metadata: fixtures/corrupt/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: Good model file truncated to 40% of its bytes.
+    expected_decision: ROLLBACK
+    expected_findings: [operational.model_loadable]
+    notes: Loading raises EOFError. Other checks that need the model are UNAVAILABLE.
+
+  good_incomplete_metadata:
+    model: fixtures/good/model.joblib
+    metadata: fixtures/good_incomplete_metadata/metadata.json
+    eval_data: data/eval.csv
+    injected_defect: >
+      Good model, but 11 metadata fields removed (seed, split, data hash,
+      hyperparameters, versions, code commit, training metrics, ...).
+    expected_decision: HOLD
+    expected_findings: [training_validity.metadata_completeness, training_validity.reproducibility]
+    notes: >
+      Unavailable checks must be UNAVAILABLE, never PASS. MQS must be flagged
+      provisional with reduced evidence coverage.
+
+  good_no_sensitive:
+    model: fixtures/good/model.joblib
+    metadata: fixtures/good_no_sensitive/metadata.json
+    eval_data: fixtures/good_no_sensitive/eval.csv
+    injected_defect: Evaluation data without the sex and race columns.
+    expected_decision: HOLD
+    expected_findings: [fairness.unavailable]
+    notes: Metadata still declares sensitive columns that eval data lacks.

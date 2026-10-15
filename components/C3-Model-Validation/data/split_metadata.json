@@ -1,0 +1,25 @@
+{
+  "dataset": "UCI Adult Income",
+  "random_state": 42,
+  "split_ratios": {
+    "train": 0.6,
+    "eval": 0.2,
+    "spare": 0.2
+  },
+  "row_counts": {
+    "train": 29305,
+    "eval": 9768,
+    "spare": 9769
+  },
+  "sensitive_columns": [
+    "sex",
+    "race"
+  ],
+  "excluded_from_baseline_model_features": [
+    "sex",
+    "race"
+  ],
+  "train_data_sha256": "3ac572b33727c295e655b7cdd1420b92f3b85068f74ccb4c48a786d3aeccda18",
+  "train_row_hashes_file": "data/train_row_hashes.txt",
+  "unique_train_row_hashes": 29288
+}

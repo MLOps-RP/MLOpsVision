@@ -1,0 +1,107 @@
+{
+  "fixture_name": "leaky",
+  "dataset": "UCI Adult Income",
+  "data_source": "UCI Adult Income via fairlearn.datasets.fetch_adult (OpenML)",
+  "task_type": "binary_classification",
+  "target_column": "target",
+  "positive_label": ">50K",
+  "sensitive_columns": [
+    "sex",
+    "race"
+  ],
+  "excluded_sensitive_features": [
+    "sex",
+    "race"
+  ],
+  "feature_columns": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "native-country",
+    "prior_high_income_flag"
+  ],
+  "random_state": 42,
+  "split": {
+    "method": "random_stratified",
+    "stratify_on": "target",
+    "seed": 42,
+    "ratios": {
+      "train": 0.6,
+      "eval": 0.2,
+      "spare": 0.2
+    }
+  },
+  "train_rows": 29305,
+  "eval_rows": 9768,
+  "train_data_sha256": "8fc205f6a810911f18e1ae64fd0e88dfd0f798e297773cd1365b22c3e20692c3",
+  "train_row_hashes_file": "data/train_row_hashes.txt",
+  "row_hash_columns": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "race",
+    "sex",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "native-country"
+  ],
+  "code": {
+    "commit": "a52903657aadfb74a79ece7903b908a1766d1023",
+    "uncommitted_source_changes": true
+  },
+  "trained_at_utc": "2026-10-15T11:01:15+00:00",
+  "model_type": "LogisticRegression",
+  "hyperparameters": {
+    "max_iter": 1000,
+    "random_state": 42
+  },
+  "training_metrics": {
+    "accuracy": 0.9784678382528579,
+    "f1": 0.9552894494437753
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.9777846027846028,
+    "precision": 0.9446308724832215,
+    "recall": 0.9636285836542576,
+    "f1": 0.9540351620419403,
+    "roc_auc": 0.9940681484030487
+  },
+  "fairness": {
+    "demographic_parity_difference_by_sex": 0.19877431761235026,
+    "selection_rate_by_sex": {
+      "Female": 0.11117974058060531,
+      "Male": 0.3099540581929556
+    },
+    "selection_rate_ratio_by_sex": 0.35869748319730865,
+    "demographic_parity_difference_by_race": 0.1556370094406388,
+    "selection_rate_by_race": {
+      "Amer-Indian-Eskimo": 0.1797752808988764,
+      "Asian-Pac-Islander": 0.2898089171974522,
+      "Black": 0.13417190775681342,
+      "Other": 0.1348314606741573,
+      "White": 0.25678923335736603
+    },
+    "selection_rate_ratio_by_race": 0.4629668025894441
+  },
+  "versions": {
+    "python": "3.12.1",
+    "scikit_learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "joblib": "1.6.0"
+  }
+}
