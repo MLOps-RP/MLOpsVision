@@ -35,3 +35,23 @@ Record each threshold or design choice here with its reason. Items marked
 - Whether to compare against an incumbent model (champion/challenger).
 - Default missing-evidence policy (exclude-and-cap vs penalize).
 - How the MQS itself will be validated (injected defects, expert agreement).
+
+## Operational readiness checks (Step 5)
+
+- **Memory check is weak evidence.** It measures resident-memory growth in the
+  validating process. It includes library imports on the first load and reads
+  about 0 MB when those libraries are already imported (seen for the `leaky`
+  fixture, 68 MB for `good`). **OPEN / Phase B:** measure in a fresh subprocess.
+  That would also isolate model loading (a security gain) and let the gate
+  survive a model that hard-crashes.
+- **Malformed-input check is in-process.** It can tell that a model rejects bad
+  input but cannot detect a hard crash (such as a segmentation fault), which
+  would end the whole run.
+- **Latency is single-row, one call at a time, on the validating machine.**
+  It says nothing about batch throughput or a production server. Always read
+  it next to the recorded machine profile.
+- **Dependency match is DECLARED evidence.** It compares the versions the
+  producer declared against the current environment; the declaration itself is
+  unverified. Python patch versions are treated as compatible.
+- **Loading executes code.** `joblib.load` runs pickle code, so the loader
+  accepts only trusted local paths. State this as a limitation in the thesis.
