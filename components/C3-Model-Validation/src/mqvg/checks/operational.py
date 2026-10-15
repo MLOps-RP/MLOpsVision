@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from mqvg.catalogue import CATALOGUE
+from mqvg.checks.predictions import prediction_blocker
 from mqvg.checks.base import (
     CheckContext, CheckFunction, binary_result, guarded, scored_result,
     unavailable_result,
@@ -33,22 +34,6 @@ def _register(check_id: str) -> Callable[[CheckFunction], CheckFunction]:
         OPERATIONAL_CHECKS[check_id] = guarded(check_id)(func)
         return OPERATIONAL_CHECKS[check_id]
     return decorator
-
-
-def _blocker(candidate: LoadedCandidate) -> str | None:
-    """Why the model cannot be run on the evaluation data, or None if it can."""
-    if candidate.model is None:
-        return f"model could not be loaded ({candidate.model_error})"
-    if candidate.eval_df is None:
-        return f"evaluation data unavailable ({candidate.eval_error})"
-    features = candidate.feature_columns
-    if features is None:
-        return ("cannot determine the model's feature columns (the model has "
-                "no feature_names_in_ and the metadata lists none)")
-    missing = [c for c in features if c not in candidate.eval_df.columns]
-    if missing:
-        return f"evaluation data lacks model feature columns {missing}"
-    return None
 
 
 def _sample(candidate: LoadedCandidate) -> pd.DataFrame:
@@ -77,12 +62,12 @@ def input_schema(ctx: CheckContext) -> CheckResult:
     c = ctx.candidate
     check_id = "operational.input_schema"
     if c.model is None:
-        return unavailable_result(ctx, check_id, "Cannot test: " + _blocker(c))
+        return unavailable_result(ctx, check_id, "Cannot test: " + prediction_blocker(c))
     if c.eval_df is None:
-        return unavailable_result(ctx, check_id, "Cannot test: " + _blocker(c))
+        return unavailable_result(ctx, check_id, "Cannot test: " + prediction_blocker(c))
     features = c.feature_columns
     if features is None:
-        return unavailable_result(ctx, check_id, "Cannot test: " + _blocker(c))
+        return unavailable_result(ctx, check_id, "Cannot test: " + prediction_blocker(c))
     missing = [col for col in features if col not in c.eval_df.columns]
     if missing:
         return binary_result(
@@ -113,7 +98,7 @@ def input_schema(ctx: CheckContext) -> CheckResult:
 @_register("operational.prediction_determinism")
 def prediction_determinism(ctx: CheckContext) -> CheckResult:
     check_id = "operational.prediction_determinism"
-    reason = _blocker(ctx.candidate)
+    reason = prediction_blocker(ctx.candidate)
     if reason:
         return unavailable_result(ctx, check_id, "Cannot test: " + reason)
     model, sample = ctx.candidate.model, _sample(ctx.candidate)
@@ -140,7 +125,7 @@ def malformed_input_handling(ctx: CheckContext) -> CheckResult:
     segmentation fault) would end the whole run and cannot be detected here.
     """
     check_id = "operational.malformed_input_handling"
-    reason = _blocker(ctx.candidate)
+    reason = prediction_blocker(ctx.candidate)
     if reason:
         return unavailable_result(ctx, check_id, "Cannot test: " + reason)
     model, sample = ctx.candidate.model, _sample(ctx.candidate)
@@ -195,7 +180,7 @@ def artifact_size(ctx: CheckContext) -> CheckResult:
 @_register("operational.latency")
 def latency(ctx: CheckContext) -> CheckResult:
     check_id = "operational.latency"
-    reason = _blocker(ctx.candidate)
+    reason = prediction_blocker(ctx.candidate)
     if reason:
         return unavailable_result(ctx, check_id, "Cannot test: " + reason)
     evaluation = ctx.config.evaluation

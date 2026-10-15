@@ -55,3 +55,26 @@ Record each threshold or design choice here with its reason. Items marked
   unverified. Python patch versions are treated as compatible.
 - **Loading executes code.** `joblib.load` runs pickle code, so the loader
   accepts only trusted local paths. State this as a limitation in the thesis.
+
+## Performance metrics (Step 6)
+
+- Binary classification only. Multiclass and regression targets, or a declared
+  non-binary task type, make the behaviour checks UNAVAILABLE (not wrong
+  numbers). **OPEN:** extend in Phase B.
+- All metrics are computed by the gate from the model's own predictions.
+  Metrics recorded in metadata are never used; for the good fixture the two
+  agree to 1e-9, which cross-checks both code paths.
+- Positive label: taken from the bundle or metadata. If undeclared it is
+  inferred as `model.classes_[1]` and the result says so. This is a
+  scikit-learn convention, not a fact; declare it where it matters.
+- Performance alone cannot reveal leakage or overfitting: the `leaky` fixture
+  scores F1 0.954 / AUC 0.994 and passes every behaviour check, and `overfit`
+  passes F1. This is the argument for the separate training-validity dimension
+  and for critical rules (use it in the thesis).
+- Reported baselines (always-positive F1/precision, AUC 0.5) are context only
+  and are not part of the score. **OPEN:** decide whether a lift-over-baseline
+  check should be scored.
+- Precision is undefined when nothing is predicted positive; it is reported as
+  0.0 with `precision_undefined` set.
+- Behaviour checks that are not built yet (fairness, calibration, subgroup,
+  robustness) report ERROR with "not implemented", never PASS, until their step.

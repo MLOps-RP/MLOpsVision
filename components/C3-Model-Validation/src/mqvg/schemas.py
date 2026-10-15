@@ -115,6 +115,10 @@ class CandidateBundle(_Strict):
     metadata_path: Path | None = None
     train_row_hashes_path: Path | None = None
     config_path: Path | None = None
+    # Optional overrides of what the metadata declares, so a candidate can be
+    # validated even when its metadata is incomplete.
+    target_column: str | None = None
+    positive_label: str | int | bool | None = None
     scenario: ScenarioInfo = Field(default_factory=ScenarioInfo)
 
 

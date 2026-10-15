@@ -44,6 +44,8 @@ class LoadedCandidate:
     metadata_provided: bool = False
     metadata_error: str | None = None
     metadata_sha256: str | None = None
+    # Results shared between checks (for example the evaluation predictions).
+    cache: dict[str, Any] = field(default_factory=dict)
 
     @property
     def feature_columns(self) -> list[str] | None:
@@ -57,8 +59,20 @@ class LoadedCandidate:
 
     @property
     def target_column(self) -> str | None:
+        """Bundle override first, then the metadata."""
+        if self.bundle.target_column is not None:
+            return self.bundle.target_column
         if self.metadata is not None:
             return self.metadata.target_column
+        return None
+
+    @property
+    def positive_label(self) -> str | int | bool | None:
+        """Bundle override first, then the metadata; None if undeclared."""
+        if self.bundle.positive_label is not None:
+            return self.bundle.positive_label
+        if self.metadata is not None:
+            return self.metadata.positive_label
         return None
 
 
