@@ -240,17 +240,45 @@ class CheckResult(_Strict):
 # --------------------------------------------------------------------------
 # Scoring
 # --------------------------------------------------------------------------
+class CheckTreatment(StrEnum):
+    COUNTED = "counted"                              # had evidence; scored
+    EXCLUDED_UNAVAILABLE = "excluded_unavailable"    # left out of the average
+    PENALIZED_AS_ZERO = "penalized_as_zero"          # missing, scored as 0
+    NOT_APPLICABLE = "not_applicable"                # never applied; ignored
+
+
+class CheckContribution(_Strict):
+    """How one check fed into its dimension score.
+
+    `points` are the check's share of the dimension score, so the points of a
+    dimension add up to that dimension's score.
+    """
+    check_id: str
+    weight: float = Field(gt=0)
+    status: CheckStatus | None   # None: no result was supplied for the check
+    score: float | None = Field(default=None, ge=0, le=100)
+    treatment: CheckTreatment
+    points: float = Field(ge=0, le=100)
+
+
 class DimensionScore(_Strict):
     dimension: Dimension
     score: float | None = Field(default=None, ge=0, le=100)
-    coverage: float = Field(ge=0, le=1)   # weight of available / total checks
+    coverage: float = Field(ge=0, le=1)   # weight of available / applicable checks
     provisional: bool
     available_checks: int = Field(ge=0)
     total_checks: int = Field(ge=0)
     note: str | None = None
+    contributions: list[CheckContribution] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _consistent(self) -> DimensionScore:
+        if self.score is not None and self.contributions:
+            total = sum(c.points for c in self.contributions)
+            if abs(total - self.score) > 1e-6:
+                raise ValueError(
+                    f"contribution points ({total}) must add up to the "
+                    f"score ({self.score})")
         if self.available_checks > self.total_checks:
             raise ValueError("available_checks cannot exceed total_checks")
         if self.score is not None and self.coverage == 0:
@@ -266,6 +294,9 @@ class ScoreCard(_Strict):
     weights: dict[Dimension, float]
     effective_weights: dict[Dimension, float] | None = None
     mqs: float | None = Field(default=None, ge=0, le=100)
+    # What the MQS would be if every missing check (and every dimension left
+    # without a score) had scored 0. Never above `mqs`; equal under `penalize`.
+    mqs_lower_bound: float | None = Field(default=None, ge=0, le=100)
     overall_coverage: float = Field(ge=0, le=1)
     provisional: bool
     missing_policy: MissingPolicy
@@ -291,6 +322,9 @@ class ScoreCard(_Strict):
                    for d in self.dimensions.values()):
                 raise ValueError(
                     "MQS built from incomplete dimensions must be provisional")
+        if (self.mqs is not None and self.mqs_lower_bound is not None
+                and self.mqs_lower_bound > self.mqs + 1e-9):
+            raise ValueError("mqs_lower_bound cannot exceed mqs")
         return self
 
 

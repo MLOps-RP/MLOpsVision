@@ -166,3 +166,41 @@ What a pretrained model can and cannot show (state this plainly in the thesis):
   `mqvg/hashing.py`, which a test pins to `scripts/fixture_utils.py`.
 - Overfit gap uses accuracy when declared, otherwise F1; the unit is a
   difference in that metric. It can be negative (eval better than train).
+
+## Scoring (Step 10)
+
+Scores on the sample fixtures (default profile, exclude_and_cap; placeholder
+thresholds, so read the *pattern*, not the numbers):
+
+| Fixture | TVS | MBS | ORS | MQS | lower bound | coverage |
+|---|---|---|---|---|---|---|
+| good | 99.9 | 73.8 | 100 | 86.9 | 86.9 | 1.00 |
+| leaky | 68.4 | 86.5 | 100 | 83.8 | 83.8 | 1.00 |
+| biased | 97.7 | 52.1 | 100 | 75.4 | 75.4 | 1.00 |
+| overfit | 81.7 | 54.8 | 100 | 71.9 | 71.9 | 1.00 |
+| miscalibrated | 99.9 | 60.7 | 100 | 80.3 | 80.3 | 1.00 |
+| corrupt | 99.9 | n/a | n/a | 99.9 | 22.5 | 0.31 |
+| good_no_sensitive | 100 | 87.6 | 100 | 93.8 | 74.8 | 0.79 |
+
+Findings (use these in the thesis):
+
+1. **A high MQS can hide a critical failure.** `leaky` (83.8) and `biased`
+   (75.4, above the 75 promote line) score well; only critical rules
+   (leakage, fairness) stop them. This is the case for critical overrides.
+2. **Excluding missing evidence rewards omission.** `good_no_sensitive` scores
+   93.8, higher than `good` (86.9), because the unfavourable fairness checks
+   dropped out of the average. The lower bound (74.8) and blocking PROMOTE on
+   missing required evidence are the safeguards. The `penalize` policy avoids
+   the incentive but is harsher. **OPEN:** which default to use, and whether
+   to cap the MQS when required evidence is missing.
+3. **A dimension can be dropped despite a known FAIL.** `corrupt` loses its
+   operational score (coverage 0.42 < 0.50) even though `model_loadable`
+   failed, leaving MQS 99.9 from training validity alone. The critical rule
+   `model_not_loadable` and the lower bound (22.5) handle it, but the number
+   alone misleads. **OPEN:** should an explicit FAIL on a required check keep a
+   dimension scored regardless of coverage?
+4. **Thresholds sit close together.** `biased` (75.4) and `good` (86.9) are
+   only 11 points apart and `biased` clears `promote_at`. Run a sensitivity
+   analysis over weights and thresholds before relying on any cutoff.
+5. **Dimension weights are a modelling choice** (0.30 / 0.50 / 0.20 here). They
+   need justification and a sensitivity analysis.
