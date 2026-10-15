@@ -129,3 +129,40 @@ Record each threshold or design choice here with its reason. Items marked
   and calibrate the thresholds against known-fragile models.
 - A model with no numeric features gets NOT_APPLICABLE for robustness; a clean
   F1 of zero makes the relative drop undefined (UNAVAILABLE).
+
+## Training validity checks (Step 9)
+
+What a pretrained model can and cannot show (state this plainly in the thesis):
+
+| Check | Evidence | Limit |
+|---|---|---|
+| metadata completeness, reproducibility info | MEASURED presence | values are not verified |
+| overfit gap | DECLARED train metric vs MEASURED eval metric | the producer's training metric is a claim; no training data access |
+| train/eval overlap | DECLARED (producer-supplied row hashes) | proves nothing if the hashes are wrong or partial |
+| single-feature leakage probe | MEASURED | a heuristic: finds a feature that predicts the label alone, not diffuse leakage; a legitimately strong feature also scores high |
+
+- The gate cannot prove a split was correct or that leakage is absent; it can
+  only find signs. Split correctness (stratification, temporal ordering) is
+  not assessed beyond the overlap hashes. **OPEN:** a `split_documented`
+  check, or train-data access for a true overlap/overfit measurement.
+- **Missing metadata silently removes protection.** With `good_incomplete_metadata`
+  the overfit gap and overlap are UNAVAILABLE, so an overfit model with no
+  declared training metrics would not be flagged by training validity (it
+  would still show up in calibration, as the `overfit` fixture does). The
+  scoring step must make this visible: low coverage, provisional MQS, and
+  `must_pass_checks` such as overfit_gap blocking PROMOTE.
+- Leakage probe: cross-validated depth-4 decision tree on each feature alone,
+  ROC AUC, max over features. On the Adult fixture an honest model's best
+  feature ('relationship') reaches 0.772; the leaky fixture's derived flag
+  reaches 0.968. The default thresholds (pass_at 0.90, fail_at 0.95) leave a
+  wide gap between those; **OPEN:** justify them on more datasets, since a
+  dataset with one genuinely dominant feature will score high.
+- Overlap is judged against a baseline: datasets contain genuine duplicates
+  (Adult: 0.12% of eval rows). The result reports the evaluation set's own
+  duplicate rate for context. **OPEN:** whether to compare overlap to the
+  expected duplicate rate rather than to a fixed fraction.
+- Relative `train_row_hashes_file` paths resolve against the working
+  directory, then the metadata file's folder. Hashing follows the convention in
+  `mqvg/hashing.py`, which a test pins to `scripts/fixture_utils.py`.
+- Overfit gap uses accuracy when declared, otherwise F1; the unit is a
+  difference in that metric. It can be negative (eval better than train).

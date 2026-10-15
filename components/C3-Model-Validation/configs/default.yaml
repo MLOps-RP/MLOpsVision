@@ -71,6 +71,8 @@ evaluation:
   latency_repeats: 50
   robustness_noise_scale: 0.1   # noise std as a fraction of each numeric feature's std
   robustness_repeats: 5
+  leakage_max_rows: 20000      # rows sampled for the single-feature leakage probe
+  leakage_cv_folds: 5
 
 metadata:
   # Dotted names refer to nested fields of the training metadata.

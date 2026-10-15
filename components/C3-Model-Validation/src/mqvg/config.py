@@ -136,6 +136,10 @@ class EvaluationConfig(_Strict):
     # `robustness_noise_scale` x (each numeric feature's own std), repeated.
     robustness_noise_scale: float = Field(default=0.1, gt=0)
     robustness_repeats: int = Field(default=5, ge=1)
+    # Leakage probe: cross-validated single-feature models, on at most this
+    # many (randomly sampled, seeded) evaluation rows.
+    leakage_max_rows: int = Field(default=20000, ge=100)
+    leakage_cv_folds: int = Field(default=5, ge=2)
 
 
 class MetadataConfig(_Strict):

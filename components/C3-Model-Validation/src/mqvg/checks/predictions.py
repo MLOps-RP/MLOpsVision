@@ -100,11 +100,23 @@ def _scores(model, X, positive_label: str) -> tuple[np.ndarray | None, str | Non
     return None, None
 
 
-def _compute(candidate: LoadedCandidate) -> Result:
-    blocker = prediction_blocker(candidate)
-    if blocker:
-        return None, "Cannot evaluate: " + blocker
+@dataclass(frozen=True)
+class LabelInfo:
+    """The evaluation labels, resolved without needing the model to run."""
+    y_true: np.ndarray        # bool over the kept rows
+    row_mask: np.ndarray      # bool over candidate.eval_df: rows with a label
+    target_column: str
+    positive_label: str
+    label_source: str
+    dropped_rows: int
 
+
+def resolve_labels(candidate: LoadedCandidate
+                   ) -> tuple[LabelInfo | None, str | None]:
+    """Target column, positive label and true labels, or the reason they
+    cannot be resolved. Needs the evaluation data but not the model."""
+    if candidate.eval_df is None:
+        return None, f"evaluation data unavailable ({candidate.eval_error})"
     task = candidate.metadata.task_type if candidate.metadata else None
     if task is not None and task != TaskType.BINARY_CLASSIFICATION:
         return None, (f"Task type '{task.value}' is not supported yet; only "
@@ -130,8 +142,21 @@ def _compute(candidate: LoadedCandidate) -> Result:
     positive, source, problem = _resolve_positive_label(candidate, observed)
     if positive is None:
         return None, problem
+    return LabelInfo(
+        y_true=(labels.to_numpy() == positive), row_mask=keep,
+        target_column=target, positive_label=positive, label_source=source,
+        dropped_rows=int((~keep).sum())), None
 
-    X = frame.loc[keep, candidate.feature_columns]
+
+def _compute(candidate: LoadedCandidate) -> Result:
+    blocker = prediction_blocker(candidate)
+    if blocker:
+        return None, "Cannot evaluate: " + blocker
+    info, problem = resolve_labels(candidate)
+    if info is None:
+        return None, problem
+
+    X = candidate.eval_df.loc[info.row_mask, candidate.feature_columns]
     try:
         predicted = np.asarray(candidate.model.predict(X)).astype(str)
     except Exception as exc:  # noqa: BLE001
@@ -140,13 +165,13 @@ def _compute(candidate: LoadedCandidate) -> Result:
         return None, (f"The model returned {len(predicted)} predictions for "
                       f"{len(X)} rows.")
 
-    score, score_source = _scores(candidate.model, X, positive)
+    score, score_source = _scores(candidate.model, X, info.positive_label)
     return EvalPredictions(
-        y_true=(labels.to_numpy() == positive),
-        y_pred=(predicted == positive),
+        y_true=info.y_true, y_pred=(predicted == info.positive_label),
         y_score=score, score_source=score_source,
-        row_mask=keep, target_column=target, positive_label=positive,
-        label_source=source, dropped_rows=int((~keep).sum()),
+        row_mask=info.row_mask, target_column=info.target_column,
+        positive_label=info.positive_label, label_source=info.label_source,
+        dropped_rows=info.dropped_rows,
     ), None
 
 
