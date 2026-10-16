@@ -69,3 +69,26 @@ class ReasoningEntry(BaseModel):
     evidence: dict = {}
     decided_by: str = "rules"
     rationale: str = ""
+
+
+class C2Output(BaseModel):
+    """What C2 gives to C3: the selected model plus all evidence and reasoning."""
+    dataset_id: str
+    run_id: str
+    task_type: TaskType
+    metric: str
+    selected_model_path: str
+    model_family: str
+    hyperparameters: dict
+    metrics_cv: dict[str, float]
+    metrics_holdout: dict[str, float]
+    model_size_kb: float
+    latency_ms_per_1k: Optional[float] = None      # Agent 3 Level 2 (Step 6)
+    pareto_front: list[dict] = []                  # Agent 3 Level 3 (Step 6)
+    candidates: list[dict] = []                    # best result per family
+    diagnoses: list[dict] = []
+    search_history_path: str
+    reasoning_log_path: str
+    total_trials: int
+    rounds: int
+    referrals_to_c1: list[str] = []
