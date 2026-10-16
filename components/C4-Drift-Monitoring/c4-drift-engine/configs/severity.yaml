@@ -1,0 +1,25 @@
+# ---------------------------------------------------------------
+# Severity scoring: 4 components, each scaled 0..1, weighted sum.
+# ---------------------------------------------------------------
+weights:
+  magnitude: 0.25      # how big the drift is (score / threshold)
+  persistence: 0.20    # how many windows in a row
+  scope: 0.15          # share of features affected
+  performance: 0.40    # how much accuracy / F1 dropped (biggest on purpose)
+
+caps:
+  magnitude_ratio: 3.0     # score = 3x threshold counts as maximum magnitude
+  persistence_windows: 5   # 5 windows in a row counts as maximum persistence
+  performance_drop: 0.20   # a drop of 0.20 counts as maximum performance impact
+
+levels:                    # score cut-offs
+  medium: 0.25
+  high: 0.50
+  critical: 0.85
+
+# Sudden collapse: a performance drop this large is Critical immediately
+critical_performance_drop: 0.25
+
+# A diagnosis must hold this many windows in a row before C4 acts
+# (Critical acts immediately)
+min_persistence: 2
