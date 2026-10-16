@@ -59,10 +59,10 @@
     "native-country"
   ],
   "code": {
-    "commit": "a52903657aadfb74a79ece7903b908a1766d1023",
-    "uncommitted_source_changes": true
+    "commit": "43d92d5df40fdeb11d2bdf634e180d5a338af15c",
+    "uncommitted_source_changes": false
   },
-  "trained_at_utc": "2026-10-15T11:02:58+00:00",
+  "trained_at_utc": "2026-10-15T13:36:12+00:00",
   "model_type": "RandomForestClassifier",
   "hyperparameters": {
     "n_estimators": 1000,
