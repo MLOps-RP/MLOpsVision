@@ -269,3 +269,15 @@ Findings and open decisions:
   the readable report are Step 13.
 - Security: the model file is unpickled in the validating process. Run the
   gate only on models from trusted sources; process isolation is Phase B.
+
+## External models (Step A)
+
+Found by running 14 foreign-model scenarios through the pipeline and fixed:
+
+1. **Label mismatch gave wrong numbers.** A model outputting 0/1 against a text target scored F1 0.000 / AUC 0.094 and was rolled back. Labels are now normalized (1, 1.0, "1" agree) and validated against `model.classes_` (or against the predictions if there is no `classes_`); a mismatch is `UNAVAILABLE` with an explanation. The unsafe decision-function fallback with an unverified sign was removed.
+2. **MQS 100.0 on 26% evidence.** `ScoreCard.mqs_sufficient_evidence` and `insufficient_evidence_reason` were added (the numeric `mqs` is unchanged). The rules engine HOLDs when a dimension has no score although overall coverage looks fine (`mqs_insufficient_evidence`), and the summary says the MQS is not reliable. Reports and APIs should show such an MQS as "n/a (insufficient evidence)" next to the worst-case value.
+3. **Unreadable was reported as bad.** A model the gate cannot read (unsupported format, or a module it does not have) is now `UNAVAILABLE`, not `FAIL`, so it leads to HOLD and not to a critical ROLLBACK. Unsupported formats are never opened. A missing, corrupt or not-a-model file is still `FAIL`. **OPEN:** whether a missing file should also be `UNAVAILABLE` (it is likely a path mistake).
+4. **Leakage probe false reassurance on text.** It scored free text ~0.5 and passed. Free-text or identifier-like columns are now listed as not assessed; if every feature is such a column the check is `UNAVAILABLE`.
+5. Clearer messages for a continuous (regression-like) target and for models that expect a different input form.
+
+Not done in Step A (still open): an explicit trust-this-model flag (planned for the CLI/API step), subprocess isolation, a numpy input option, TSV/Parquet input, multiclass and regression support.

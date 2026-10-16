@@ -301,6 +301,12 @@ class ScoreCard(_Strict):
     overall_coverage: float = Field(ge=0, le=1)
     provisional: bool
     missing_policy: MissingPolicy
+    # False when the MQS rests on too little evidence to be quoted as a
+    # quality score (a dimension without a score, or overall evidence below the
+    # configured minimum). The number is still recorded, but should be shown
+    # as "n/a" together with the reason.
+    mqs_sufficient_evidence: bool = True
+    insufficient_evidence_reason: str | None = None
 
     @staticmethod
     def _check_weights(weights: dict[Dimension, float], label: str) -> None:
@@ -326,6 +332,10 @@ class ScoreCard(_Strict):
         if (self.mqs is not None and self.mqs_lower_bound is not None
                 and self.mqs_lower_bound > self.mqs + 1e-9):
             raise ValueError("mqs_lower_bound cannot exceed mqs")
+        if self.mqs_sufficient_evidence and self.insufficient_evidence_reason:
+            raise ValueError("a reason is given although the evidence is sufficient")
+        if not self.mqs_sufficient_evidence and not self.insufficient_evidence_reason:
+            raise ValueError("insufficient evidence needs a reason")
         return self
 
 

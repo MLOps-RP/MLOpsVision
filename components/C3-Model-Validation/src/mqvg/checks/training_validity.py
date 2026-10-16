@@ -40,6 +40,12 @@ from mqvg.schemas import CheckResult, Dimension, EvidenceSource
 
 TRAINING_VALIDITY_CHECKS: dict[str, CheckFunction] = {}
 
+# A string column is "free text or identifier-like" (and not assessable by the
+# one-feature probe) if its values average at least this many words, or if more
+# than this share of its rows are distinct.
+FREE_TEXT_MIN_WORDS = 4
+FREE_TEXT_MAX_DISTINCT_SHARE = 0.5
+FREE_TEXT_SAMPLE = 2000
 LEAKAGE_TREE_DEPTH = 4
 LEAKAGE_MIN_LEAF = 20
 TOP_FEATURES_REPORTED = 5
@@ -216,6 +222,25 @@ def train_eval_overlap(ctx: CheckContext) -> CheckResult:
 # --------------------------------------------------------------------------
 # Leakage probe
 # --------------------------------------------------------------------------
+def is_free_text_like(values: pd.Series) -> bool:
+    """True for string columns the one-feature probe cannot judge.
+
+    The probe treats each distinct string as a category, which tells nothing
+    for free text or identifiers: every value is (nearly) unique, so the probe
+    would report ~0.5 and look reassuring although it examined nothing.
+    """
+    present = values.dropna()
+    if present.empty:
+        return False
+    sample = present.iloc[:FREE_TEXT_SAMPLE]
+    if not sample.map(lambda v: isinstance(v, str)).all():
+        return False
+    words = sample.map(lambda v: len(v.split())).mean()
+    distinct_share = present.nunique() / len(present)
+    return bool(words >= FREE_TEXT_MIN_WORDS
+                or (len(present) >= 50 and distinct_share > FREE_TEXT_MAX_DISTINCT_SHARE))
+
+
 def single_feature_auc(values: pd.Series, y: np.ndarray, folds: int,
                        seed: int) -> float:
     """Cross-validated ROC AUC of a shallow tree that sees ONE feature."""
@@ -284,7 +309,17 @@ def single_feature_predictiveness(ctx: CheckContext) -> CheckResult:
                 ctx, check_id, "The sampled rows contain too few examples of one class.")
 
     aucs, failed = {}, {}
+    text_like = [f for f in features if is_free_text_like(frame[f])]
+    if len(text_like) == len(features):
+        return unavailable_result(
+            ctx, check_id,
+            f"Every feature column {text_like} is free text or identifier-like, "
+            "which this probe cannot assess (it would report ~0.5 without "
+            "examining anything). Leakage in text features is not checked.",
+            details={"not_assessed_columns": text_like})
     for feature in features:
+        if feature in text_like:
+            continue
         try:
             aucs[feature] = single_feature_auc(
                 frame[feature], y, evaluation.leakage_cv_folds,
@@ -302,10 +337,13 @@ def single_feature_predictiveness(ctx: CheckContext) -> CheckResult:
         ctx, check_id, top_auc,
         f"The strongest single feature, '{top}', reaches a cross-validated ROC "
         f"AUC of {top_auc:.3f} on its own ({len(aucs)} features, {len(frame)} "
-        "rows). Values near 1.0 suggest the feature leaks the label.",
+        "rows). Values near 1.0 suggest the feature leaks the label."
+        + (f" Not assessed (free text or identifier-like): {text_like}."
+           if text_like else ""),
         details={"top_feature": top,
                  "top_features": dict(ranked[:TOP_FEATURES_REPORTED]),
                  "all_features": dict(ranked), "failed_features": failed,
+                 "not_assessed_columns": text_like,
                  "rows_used": len(frame), "sampled": sampled,
                  "cv_folds": evaluation.leakage_cv_folds,
                  "tree_depth": LEAKAGE_TREE_DEPTH,

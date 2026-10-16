@@ -340,3 +340,18 @@ def test_corrupt_fixture_fails_to_load(default_config):
 def test_slow_fixture_is_flagged_for_size(default_config):
     results = _fixture_results("slow", DATA / "eval.csv", default_config)
     assert results["operational.artifact_size"].status == CheckStatus.WARN
+
+
+# -------------------------------------------- loadable: FAIL vs UNAVAILABLE
+@pytest.mark.parametrize("kind, expected", [
+    ("unsupported_format", CheckStatus.UNAVAILABLE),
+    ("missing_dependency", CheckStatus.UNAVAILABLE),
+    ("corrupt", CheckStatus.FAIL), ("not_found", CheckStatus.FAIL),
+    ("not_a_model", CheckStatus.FAIL), (None, CheckStatus.FAIL)])
+def test_model_loadable_distinguishes_a_bad_model_from_an_unreadable_one(
+        candidate_with, default_config, kind, expected):
+    c = candidate_with(None, model_error="could not load", model_failure=kind)
+    result = {r.id: r for r in run_operational_checks(c, default_config)}[
+        "operational.model_loadable"]
+    assert result.status == expected
+    assert (result.score is None) == (expected == CheckStatus.UNAVAILABLE)

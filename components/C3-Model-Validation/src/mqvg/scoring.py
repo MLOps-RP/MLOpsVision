@@ -154,11 +154,26 @@ def compute_scorecard(results: Sequence[CheckResult],
                           for d, s in penalized.items())
 
     clip = lambda v: None if v is None else min(100.0, max(0.0, v))  # noqa: E731
-    overall_coverage = sum(weights[d] * s.coverage for d, s in dimensions.items())
+    overall_coverage = min(1.0, max(0.0, sum(
+        weights[d] * s.coverage for d, s in dimensions.items())))
+
+    # Is there enough evidence to quote the MQS as a quality score?
+    problems = []
+    if mqs is None:
+        problems.append("no MQS could be computed")
+    unscored = [d.value.replace("_", " ") for d, s in dimensions.items()
+                if s.score is None]
+    if unscored and mqs is not None:
+        problems.append("no score for " + " and ".join(unscored))
+    if overall_coverage < config.coverage.min_overall:
+        problems.append(f"overall evidence {overall_coverage:.0%} is below the "
+                        f"required {config.coverage.min_overall:.0%}")
 
     return ScoreCard(
         dimensions=dimensions, weights=weights, effective_weights=effective,
         mqs=clip(mqs), mqs_lower_bound=clip(lower_bound),
-        overall_coverage=min(1.0, max(0.0, overall_coverage)),
+        overall_coverage=overall_coverage,
         provisional=any(s.provisional for s in dimensions.values()),
-        missing_policy=policy)
+        missing_policy=policy,
+        mqs_sufficient_evidence=not problems,
+        insufficient_evidence_reason="; ".join(problems) or None)

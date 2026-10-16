@@ -390,3 +390,23 @@ def test_strict_profile_is_unattainable_for_the_baseline_model():
     _, _, _, decision = _decisions(strict)["good"]
     assert decision.decision == Decision.ROLLBACK
     assert "severe_selection_rate_disparity" in rule_ids(decision)
+
+
+# ------------------------------------------------ insufficient evidence (Step A)
+def test_an_unscored_dimension_holds_even_when_overall_coverage_is_enough(make_config):
+    config = make_config(lambda d: d["coverage"].update(min_overall=0.3))
+    d = decide(config, per_dimension={MB: UNAVAILABLE})
+    assert d.decision == Decision.HOLD
+    rule = by_id(d)["mqs_insufficient_evidence"]
+    assert rule.kind == RuleKind.EVIDENCE and rule.observed == ["model_behaviour"]
+    assert "not reliable" in d.summary
+
+
+def test_the_insufficient_evidence_rule_is_not_duplicated(default_config):
+    d = decide(default_config, per_dimension={MB: UNAVAILABLE})
+    assert "overall_coverage_below_minimum" in rule_ids(d)
+    assert "mqs_insufficient_evidence" not in rule_ids(d)
+
+
+def test_a_reliable_mqs_summary_has_no_warning(default_config):
+    assert "not reliable" not in decide(default_config).summary

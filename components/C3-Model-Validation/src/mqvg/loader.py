@@ -26,6 +26,27 @@ from mqvg.schemas import CandidateBundle, TrainingMetadata
 BYTES_PER_MB = 1024 * 1024
 MEMORY_PROBE_ROWS = 200
 
+# Why a model could not be loaded. The first two say something about the
+# artifact; the last two say only that THIS gate cannot read it, which is not
+# a statement about the model's quality (so they are UNAVAILABLE, not FAIL).
+NOT_FOUND = "not_found"
+UNREADABLE = "unreadable"
+CORRUPT = "corrupt"
+NOT_A_MODEL = "not_a_model"
+UNSUPPORTED_FORMAT = "unsupported_format"
+MISSING_DEPENDENCY = "missing_dependency"
+CANNOT_ASSESS = {UNSUPPORTED_FORMAT, MISSING_DEPENDENCY}
+
+SUPPORTED_SUFFIXES = (".joblib", ".pkl", ".pickle")
+# Formats the gate refuses to load (and never executes).
+UNSUPPORTED_SUFFIXES = {
+    ".onnx": "ONNX", ".h5": "Keras/TensorFlow", ".hdf5": "Keras/TensorFlow",
+    ".keras": "Keras", ".pb": "TensorFlow", ".tflite": "TensorFlow Lite",
+    ".pt": "PyTorch", ".pth": "PyTorch", ".ckpt": "PyTorch/TensorFlow checkpoint",
+    ".safetensors": "safetensors", ".xgb": "XGBoost", ".ubj": "XGBoost",
+    ".cbm": "CatBoost", ".pmml": "PMML", ".mlmodel": "Core ML", ".gguf": "GGUF",
+}
+
 
 @dataclass
 class LoadedCandidate:
@@ -33,6 +54,7 @@ class LoadedCandidate:
     bundle: CandidateBundle
     model: Any | None = None
     model_error: str | None = None
+    model_failure: str | None = None   # one of the kind constants above
     load_warnings: list[str] = field(default_factory=list)
     model_size_bytes: int | None = None
     model_sha256: str | None = None
@@ -140,16 +162,46 @@ def _load_metadata(candidate: LoadedCandidate) -> None:
         candidate.metadata_error = f"cannot parse metadata: {_describe(exc)}"
 
 
+def _fail(candidate: LoadedCandidate, kind: str, message: str) -> None:
+    candidate.model_failure, candidate.model_error = kind, message
+
+
+def _classify_load_error(exc: BaseException) -> tuple[str, str]:
+    """(kind, message) for an exception raised while loading a model file."""
+    scope = ("This says nothing about the model's quality; the gate simply "
+             "cannot load it here.")
+    if isinstance(exc, ImportError):
+        name = getattr(exc, "name", None) or str(exc)
+        return MISSING_DEPENDENCY, (
+            f"The model needs the Python module '{name}', which is not "
+            f"installed in the gate's environment. {scope}")
+    if isinstance(exc, AttributeError) and "attribute" in str(exc):
+        return MISSING_DEPENDENCY, (
+            f"The model refers to code that is not available in the gate's "
+            f"environment ({_describe(exc)}). {scope}")
+    return CORRUPT, f"cannot load model: {_describe(exc)}"
+
+
 def _load_model(candidate: LoadedCandidate) -> None:
     path = candidate.bundle.model_path
     if not path.is_file():
-        candidate.model_error = f"model artifact not found: {path}"
+        _fail(candidate, NOT_FOUND, f"model artifact not found: {path}")
         return
     candidate.model_size_bytes = path.stat().st_size
     try:
         candidate.model_sha256 = file_sha256(path)
     except OSError as exc:
-        candidate.model_error = f"cannot read model artifact: {_describe(exc)}"
+        _fail(candidate, UNREADABLE,
+              f"cannot read model artifact: {_describe(exc)}")
+        return
+
+    suffix = path.suffix.lower()
+    if suffix in UNSUPPORTED_SUFFIXES:
+        _fail(candidate, UNSUPPORTED_FORMAT, (
+            f"'{suffix}' files ({UNSUPPORTED_SUFFIXES[suffix]}) are not "
+            "supported: the gate loads Python models saved with joblib or "
+            f"pickle ({', '.join(SUPPORTED_SUFFIXES)}). This says nothing "
+            "about the model's quality."))
         return
 
     gc.collect()
@@ -160,11 +212,11 @@ def _load_model(candidate: LoadedCandidate) -> None:
             model = joblib.load(path)
         candidate.load_warnings = [str(w.message) for w in caught]
     except Exception as exc:
-        candidate.model_error = f"cannot load model: {_describe(exc)}"
+        _fail(candidate, *_classify_load_error(exc))
         return
     if not hasattr(model, "predict"):
-        candidate.model_error = (
-            f"loaded object of type {type(model).__name__} has no predict method")
+        _fail(candidate, NOT_A_MODEL,
+              f"loaded object of type {type(model).__name__} has no predict method")
         return
     candidate.model = model
 

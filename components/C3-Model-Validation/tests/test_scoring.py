@@ -375,3 +375,40 @@ def test_omitting_fairness_evidence_raises_the_excluded_score(cards):
     assert missing.provisional and missing.overall_coverage < 1
     assert missing.mqs > full.mqs
     assert missing.mqs_lower_bound < full.mqs
+
+
+# ------------------------------------------------ sufficient evidence (Step A)
+def test_full_evidence_is_sufficient(default_config):
+    card = score(default_config)
+    assert card.mqs_sufficient_evidence and card.insufficient_evidence_reason is None
+
+
+def test_a_dimension_without_a_score_makes_the_mqs_insufficient(default_config):
+    card = score(default_config, per_dimension={TV: 80, MB: UNAVAILABLE, OR: 90})
+    assert card.mqs == pytest.approx(84.0)               # the number is still there
+    assert not card.mqs_sufficient_evidence
+    assert "no score for model behaviour" in card.insufficient_evidence_reason
+
+
+def test_overall_coverage_below_the_minimum_makes_the_mqs_insufficient(make_config):
+    config = make_config(lambda d: d["coverage"].update(min_overall=0.99))
+    card = score(config, scores={"behaviour.precision": UNAVAILABLE})
+    assert not card.mqs_sufficient_evidence
+    assert "below the required 99%" in card.insufficient_evidence_reason
+
+
+def test_no_mqs_is_reported_as_insufficient_with_a_reason(default_config):
+    card = score(default_config, base=UNAVAILABLE)
+    assert not card.mqs_sufficient_evidence
+    assert "no MQS could be computed" in card.insufficient_evidence_reason
+
+
+def test_scorecard_requires_a_reason_exactly_when_evidence_is_insufficient(
+        default_config):
+    data = score(default_config).model_dump()
+    data["insufficient_evidence_reason"] = "because"
+    with pytest.raises(ValidationError, match="evidence is sufficient"):
+        ScoreCard.model_validate(data)
+    data.update(insufficient_evidence_reason=None, mqs_sufficient_evidence=False)
+    with pytest.raises(ValidationError, match="needs a reason"):
+        ScoreCard.model_validate(data)

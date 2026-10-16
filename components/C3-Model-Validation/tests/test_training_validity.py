@@ -487,3 +487,48 @@ def test_incomplete_metadata_fixture_loses_declared_evidence(default_config):
         assert results[check_id].status == CheckStatus.UNAVAILABLE
         assert results[check_id].score is None
     assert results[LEAK].status == CheckStatus.PASS      # needs no metadata
+
+
+# ----------------------------------------- text-like features (Step A)
+from mqvg.checks.training_validity import is_free_text_like  # noqa: E402
+
+
+@pytest.mark.parametrize("values, expected", [
+    (["a sentence with several words here"] * 10, True),     # free text
+    ([f"id{i}" for i in range(120)], True),                  # identifier-like
+    (["x", "y", "z"] * 50, False),                           # ordinary category
+    ([1, 2, 3] * 40, False),                                 # numbers
+    ([None] * 10, False),                                    # nothing there
+    ([[1], [2], [3]] * 20, False),                           # not strings
+    (["single-word"] * 5 + [None] * 5, False),
+])
+def test_free_text_detection(values, expected):
+    assert is_free_text_like(pd.Series(values, dtype=object)) is expected
+
+
+def test_features_that_are_all_free_text_are_not_assessed_not_passed(
+        candidate_with, default_config):
+    rng = np.random.default_rng(0)
+    words = np.array("alpha beta gamma delta epsilon zeta eta theta".split())
+    frame = pd.DataFrame({
+        "text": [" ".join(rng.choice(words, 6)) for _ in range(300)],
+        "target": rng.choice([POS, NEG], 300)})
+    meta = TrainingMetadata(target_column="target", positive_label=POS,
+                            feature_columns=["text"])
+    c = candidate_with(Features(["text"]), eval_df=frame, metadata=meta)
+    result = run(c, default_config)[LEAK]
+    assert result.status == CheckStatus.UNAVAILABLE and result.score is None
+    assert result.details["not_assessed_columns"] == ["text"]
+    assert "free text" in result.message
+
+
+def test_a_text_column_is_skipped_while_other_features_are_still_checked(
+        candidate_with, default_config):
+    frame = leak_frame()
+    rng = np.random.default_rng(1)
+    words = np.array("alpha beta gamma delta epsilon zeta eta theta".split())
+    frame["comment"] = [" ".join(rng.choice(words, 6)) for _ in range(len(frame))]
+    result = run(leak_candidate(candidate_with, frame), default_config)[LEAK]
+    assert result.details["top_feature"] == "leak"
+    assert result.details["not_assessed_columns"] == ["comment"]
+    assert "Not assessed" in result.message and "comment" not in result.details["all_features"]

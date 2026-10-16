@@ -21,7 +21,7 @@ from mqvg.checks.base import (
 )
 from mqvg.config import GateConfig
 from mqvg.environment import current_versions, machine_profile
-from mqvg.loader import BYTES_PER_MB, LoadedCandidate
+from mqvg.loader import BYTES_PER_MB, CANNOT_ASSESS, LoadedCandidate
 from mqvg.schemas import CheckResult, Dimension, EvidenceSource
 
 SAMPLE_ROWS = 1000
@@ -53,8 +53,13 @@ def model_loadable(ctx: CheckContext) -> CheckResult:
             details={"model_type": type(c.model).__name__,
                      "load_warnings": c.load_warnings,
                      "model_sha256": c.model_sha256})
+    details = {"error": c.model_error, "failure_kind": c.model_failure}
+    if c.model_failure in CANNOT_ASSESS:
+        # The gate cannot read this model; that is not evidence the model is bad.
+        return unavailable_result(ctx, check_id, str(c.model_error),
+                                  details=details)
     return binary_result(ctx, check_id, False, str(c.model_error),
-                         details={"error": c.model_error})
+                         details=details)
 
 
 @_register("operational.input_schema")

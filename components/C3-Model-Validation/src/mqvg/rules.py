@@ -82,9 +82,12 @@ def _mqs_text(card: ScoreCard) -> str:
     if card.mqs is None:
         return "no MQS could be computed"
     text = f"MQS {card.mqs:.1f}"
+    notes = []
+    if not card.mqs_sufficient_evidence:
+        notes.append(f"not reliable: {card.insufficient_evidence_reason}")
     if card.mqs_lower_bound is not None and card.mqs - card.mqs_lower_bound > 0.05:
-        text += f" (at worst {card.mqs_lower_bound:.1f} if missing checks had failed)"
-    return text
+        notes.append(f"at worst {card.mqs_lower_bound:.1f} if missing checks had failed")
+    return text + (f" ({'; '.join(notes)})" if notes else "")
 
 
 def _summary(decision: Decision, rules: list[TriggeredRule], card: ScoreCard,
@@ -156,6 +159,17 @@ def evaluate_rules(checks: Sequence[CheckResult], scorecard: ScoreCard,
                    f"is below the required {config.coverage.min_overall:.0%}.",
             observed=scorecard.overall_coverage,
             threshold=config.coverage.min_overall))
+    unscored = [d.value for d, dim in scorecard.dimensions.items()
+                if dim.score is None]
+    if (mqs is not None and unscored
+            and scorecard.overall_coverage >= config.coverage.min_overall):
+        rules.append(TriggeredRule(
+            rule_id="mqs_insufficient_evidence",
+            name="MQS rests on insufficient evidence", kind=RuleKind.EVIDENCE,
+            effect=Decision.HOLD,
+            reason="These dimensions have too little evidence to be scored, so "
+                   "the MQS is not reliable: " + ", ".join(unscored) + ".",
+            observed=unscored))
     if mqs is None:
         rules.append(TriggeredRule(
             rule_id="mqs_unavailable", name="No MQS could be computed",

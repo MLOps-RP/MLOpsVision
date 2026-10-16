@@ -152,3 +152,34 @@ def test_generated_fixtures_load_as_expected(name):
     c = load_candidate(CandidateBundle(model_path=model,
                                        eval_data_path=DATA / "eval.csv"))
     assert (c.model is not None) == (name == "good")
+
+
+# --------------------------------------------------- failure kinds (Step A)
+def test_load_failures_are_classified(tiny_files):
+    from mqvg import loader
+
+    def kind(path):
+        return load_candidate(CandidateBundle(
+            model_path=path, eval_data_path=tiny_files["eval"])).model_failure
+
+    good = tiny_files["model"]
+    assert kind(good) is None
+    assert kind(good.parent / "gone.joblib") == loader.NOT_FOUND
+    truncated = good.parent / "cut.joblib"
+    truncated.write_bytes(good.read_bytes()[:30])
+    assert kind(truncated) == loader.CORRUPT
+    onnx = good.parent / "m.onnx"
+    onnx.write_bytes(good.read_bytes())            # a valid pickle with the wrong suffix
+    assert kind(onnx) == loader.UNSUPPORTED_FORMAT
+    dictionary = good.parent / "d.joblib"
+    joblib.dump({"a": 1}, dictionary)
+    assert kind(dictionary) == loader.NOT_A_MODEL
+
+
+def test_an_unsupported_suffix_is_never_loaded(tiny_files):
+    onnx = tiny_files["model"].parent / "valid.onnx"
+    onnx.write_bytes(tiny_files["model"].read_bytes())
+    c = load_candidate(CandidateBundle(model_path=onnx,
+                                       eval_data_path=tiny_files["eval"]))
+    assert c.model is None and c.model_sha256 is not None   # hashed, not executed
+    assert "ONNX" in c.model_error and ".joblib" in c.model_error

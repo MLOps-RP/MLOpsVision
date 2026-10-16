@@ -64,6 +64,8 @@ def show(name: str, result) -> None:
     print(f"  {'MQS  model quality score':28s} {mqs:>6s}   "
           f"worst case {card.mqs_lower_bound:.1f}   overall evidence "
           f"{card.overall_coverage:.0%}   provisional={card.provisional}")
+    if not card.mqs_sufficient_evidence:
+        print(f"  !! MQS NOT RELIABLE: {card.insufficient_evidence_reason}")
 
     print("\nCHECKS")
     print(f"  {'check':42s} {'status':12s} {'value':>9s} {'score':>6s}  evidence")
@@ -106,7 +108,8 @@ def main() -> None:
         d = r.scorecard.dimensions
         cell = lambda dim: ("   n/a" if d[dim].score is None  # noqa: E731
                             else f"{d[dim].score:6.1f}")
-        mqs = "   n/a" if r.scorecard.mqs is None else f"{r.scorecard.mqs:6.1f}"
+        reliable = r.scorecard.mqs is not None and r.scorecard.mqs_sufficient_evidence
+        mqs = f"{r.scorecard.mqs:6.1f}" if reliable else "   n/a"
         print(f"{name:14s} {r.decision.decision.value:9s} {mqs} "
               f"{cell(Dimension.TRAINING_VALIDITY)} {cell(Dimension.MODEL_BEHAVIOUR)} "
               f"{cell(Dimension.OPERATIONAL_READINESS)}")

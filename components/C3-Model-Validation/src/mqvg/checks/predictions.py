@@ -5,17 +5,25 @@ is cached on the candidate, so F1, fairness, calibration and the rest all
 see identical predictions. When predictions cannot be produced honestly, the
 reason is returned so each check can report itself UNAVAILABLE.
 
-Scope: binary classification. Labels are compared as strings so that 1,
-"1" and True from different sources agree.
+Scope: binary classification. Labels are compared as normalized text (see
+`normalize_label`) so that 1, 1.0, "1" and True from different sources agree.
+
+A model and its evaluation data must use the same label values. If they do
+not (for example the model outputs 0/1 but the target holds ">50K"), no metric
+is computed: any number would blame the model for a data mismatch.
 """
 from __future__ import annotations
 
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 
 from mqvg.loader import LoadedCandidate
 from mqvg.schemas import TaskType
+
+# More distinct numeric target values than this looks like regression.
+CONTINUOUS_TARGET_MIN_DISTINCT = 20
 
 
 @dataclass(frozen=True)
@@ -36,6 +44,30 @@ class EvalPredictions:
 
 
 Result = tuple[EvalPredictions | None, str | None]
+
+
+def normalize_label(value) -> str:
+    """Canonical text for a class label.
+
+    Integer-valued numbers collapse (1, 1.0 and "1.0" all become "1") so a
+    CSV column and a model that disagree only about int versus float still
+    match. Everything else is compared as its text.
+    """
+    text = str(value)
+    try:
+        number = float(text)
+    except ValueError:
+        return text
+    if not np.isfinite(number):
+        return text
+    return str(int(number)) if number.is_integer() else text
+
+
+def _normalized(values) -> np.ndarray:
+    """normalize_label over an array, computing each distinct value once."""
+    series = pd.Series(np.asarray(values).ravel())
+    mapping = {v: normalize_label(v) for v in series.unique()}
+    return series.map(mapping).to_numpy()
 
 
 def f1_from_labels(y_true: np.ndarray, y_pred: np.ndarray) -> float | None:
@@ -62,35 +94,55 @@ def prediction_blocker(candidate: LoadedCandidate) -> str | None:
     return None
 
 
+def model_classes(model) -> list[str] | None:
+    """The model's class labels, normalized, or None if it has none."""
+    classes = getattr(model, "classes_", None)
+    if classes is None or np.ndim(classes) != 1:
+        return None
+    return [normalize_label(c) for c in classes]
+
+
+def _mismatch(observed: list[str], model_side: list[str], what: str) -> str:
+    return (
+        f"Label mismatch: the evaluation target contains {observed} but "
+        f"{what} {model_side}. The model and the evaluation data appear to use "
+        "different label encodings (for example 0/1 versus text), so no "
+        "metric can be computed. Re-encode the evaluation target, or supply a "
+        "model trained on the same labels.")
+
+
 def _resolve_positive_label(candidate: LoadedCandidate,
                             observed: list[str]) -> tuple[str | None, str, str | None]:
     """Return (label, source, problem)."""
     declared = candidate.positive_label
     if declared is not None:
-        label = str(declared)
+        label = normalize_label(declared)
         if label not in observed:
             return None, "declared", (
                 f"declared positive label {label!r} does not appear in the "
                 f"target column (values: {observed}); either the label is "
                 "misspelled or the evaluation data has no positive examples")
         return label, "declared in bundle or metadata", None
-    classes = getattr(candidate.model, "classes_", None)
+    classes = model_classes(candidate.model)
     if classes is not None and len(classes) == 2:
-        label = str(classes[1])
-        if label in observed:
-            return label, "inferred: second class of model.classes_", None
+        if classes[1] in observed:
+            return classes[1], "inferred: second class of model.classes_", None
+        if not set(observed) <= set(classes):
+            return None, "undeclared", _mismatch(
+                observed, classes, "the model's classes are")
     return None, "undeclared", (
         "positive label is not declared and could not be inferred; set "
         "positive_label in the metadata or bundle")
 
 
 def _scores(model, X, positive_label: str) -> tuple[np.ndarray | None, str | None]:
-    classes = [str(c) for c in getattr(model, "classes_", [])]
+    classes = model_classes(model) or []
     try:
         if hasattr(model, "predict_proba") and positive_label in classes:
             proba = np.asarray(model.predict_proba(X))
             return proba[:, classes.index(positive_label)], "predict_proba"
-        if hasattr(model, "decision_function") and len(classes) == 2:
+        if (hasattr(model, "decision_function") and len(classes) == 2
+                and positive_label in classes):
             raw = np.asarray(model.decision_function(X), dtype=float)
             if raw.ndim == 1:
                 return (raw if classes[1] == positive_label else -raw,
@@ -109,6 +161,7 @@ class LabelInfo:
     positive_label: str
     label_source: str
     dropped_rows: int
+    observed: list[str]       # distinct (normalized) target values
 
 
 def resolve_labels(candidate: LoadedCandidate
@@ -133,9 +186,16 @@ def resolve_labels(candidate: LoadedCandidate
     keep = frame[target].notna().to_numpy()
     if not keep.any():
         return None, f"Every value in target column '{target}' is missing."
-    labels = frame.loc[keep, target].astype(str)
-    observed = sorted(labels.unique())
+    labels = _normalized(frame.loc[keep, target])
+    observed = sorted(set(labels))
     if len(observed) > 2:
+        numeric = (pd.api.types.is_numeric_dtype(frame[target])
+                   and not pd.api.types.is_bool_dtype(frame[target]))
+        if numeric and len(observed) > CONTINUOUS_TARGET_MIN_DISTINCT:
+            return None, (
+                f"The target has {len(observed)} distinct numeric values, so "
+                "this looks like a regression task, which is not supported "
+                "yet (only binary classification is evaluated).")
         return None, (f"The target has {len(observed)} classes; multiclass "
                       "evaluation is not supported yet.")
 
@@ -143,9 +203,27 @@ def resolve_labels(candidate: LoadedCandidate
     if positive is None:
         return None, problem
     return LabelInfo(
-        y_true=(labels.to_numpy() == positive), row_mask=keep,
+        y_true=(labels == positive), row_mask=keep,
         target_column=target, positive_label=positive, label_source=source,
-        dropped_rows=int((~keep).sum())), None
+        dropped_rows=int((~keep).sum()), observed=observed), None
+
+
+def _label_space_problem(model, info: LabelInfo, predicted: np.ndarray
+                         ) -> str | None:
+    """Why the model's labels cannot be compared with the evaluation labels."""
+    classes = model_classes(model)
+    if classes is not None:
+        if not set(info.observed) <= set(classes) or info.positive_label not in classes:
+            return _mismatch(info.observed, classes, "the model's classes are")
+        return None
+    # No classes_ attribute: judge by what the model actually predicted.
+    seen = sorted(set(predicted))
+    if len(info.observed) == 2:
+        if not set(seen) <= set(info.observed):
+            return _mismatch(info.observed, seen, "the model predicts")
+    elif not set(seen) & set(info.observed):
+        return _mismatch(info.observed, seen, "the model predicts")
+    return None
 
 
 def _compute(candidate: LoadedCandidate) -> Result:
@@ -158,12 +236,20 @@ def _compute(candidate: LoadedCandidate) -> Result:
 
     X = candidate.eval_df.loc[info.row_mask, candidate.feature_columns]
     try:
-        predicted = np.asarray(candidate.model.predict(X)).astype(str)
+        raw = np.asarray(candidate.model.predict(X))
     except Exception as exc:  # noqa: BLE001
         return None, f"The model failed to predict: {type(exc).__name__}: {exc}"
-    if len(predicted) != len(X):
-        return None, (f"The model returned {len(predicted)} predictions for "
-                      f"{len(X)} rows.")
+    if len(raw) != len(X):
+        return None, (f"The model returned {len(raw)} predictions for "
+                      f"{len(X)} rows. The model may expect a different input "
+                      "form (for example a single text column or a plain "
+                      "array) than the DataFrame of feature columns the gate "
+                      "supplies.")
+    predicted = _normalized(raw)
+
+    mismatch = _label_space_problem(candidate.model, info, predicted)
+    if mismatch:
+        return None, mismatch
 
     score, score_source = _scores(candidate.model, X, info.positive_label)
     return EvalPredictions(
