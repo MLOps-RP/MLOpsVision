@@ -33,11 +33,12 @@ from mqvg.checks.operational import run_operational_checks
 from mqvg.checks.training_validity import run_training_validity_checks
 from mqvg.config import ConfigError, GateConfig, config_hash, load_config
 from mqvg.environment import machine_profile
+from mqvg.explain import explain_failures
 from mqvg.loader import LoadedCandidate, load_candidate
 from mqvg.rules import evaluate_rules
 from mqvg.schemas import (
     CandidateBundle, CandidateSummary, CheckResult, CheckStatus, Dimension,
-    ValidationResult,
+    ScenarioMode, ValidationResult,
 )
 from mqvg.scoring import compute_scorecard
 
@@ -125,4 +126,8 @@ def run_validation(bundle: CandidateBundle, config: GateConfig | None = None, *,
         config_snapshot=config.model_dump(mode="json"),
         environment={"machine": machine_profile(),
                      "timings_seconds": timings},
-        checks=checks, scorecard=scorecard, decision=decision)
+        checks=checks, scorecard=scorecard, decision=decision,
+        explanations=explain_failures(
+            checks, scorecard, decision, config,
+            simulated_inputs=(bundle.scenario.simulated_inputs
+                              if bundle.scenario.mode == ScenarioMode.SIMULATED else ())))

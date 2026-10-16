@@ -8,7 +8,8 @@ Run from the C3-Model-Validation folder:
 
 For every model it prints the decision, the three dimension scores, the MQS,
 every check with its evidence, and each rule that fired. The full result is
-saved to reports/<model>/result.json (the reports/ folder is gitignored).
+saved to reports/<model>/result.json, with a readable reports/<model>/report.md
+(the reports/ folder is gitignored).
 
 This is a demonstration helper. It is not part of the gate (src/mqvg).
 """
@@ -17,6 +18,7 @@ from pathlib import Path
 
 from mqvg.config import load_config
 from mqvg.pipeline import run_validation
+from mqvg.reporting import write_report
 from mqvg.schemas import CandidateBundle, Dimension
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -94,10 +96,7 @@ def main() -> None:
     for name in args.models:
         result = run_validation(bundle_for(name), config)
         show(name, result)
-        out = PROJECT / "reports" / name
-        out.mkdir(parents=True, exist_ok=True)
-        (out / "result.json").write_text(result.model_dump_json(indent=2),
-                                         encoding="utf-8")
+        write_report(result, PROJECT / "reports" / name)
         rows.append((name, result))
 
     print("\n" + "=" * 100)

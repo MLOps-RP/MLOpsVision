@@ -281,3 +281,11 @@ Found by running 14 foreign-model scenarios through the pipeline and fixed:
 5. Clearer messages for a continuous (regression-like) target and for models that expect a different input form.
 
 Not done in Step A (still open): an explicit trust-this-model flag (planned for the CLI/API step), subprocess isolation, a numpy input option, TSV/Parquet input, multiclass and regression support.
+
+## Reporting and explanation (Step 13)
+
+- The report is a pure rendering of the `ValidationResult`: it makes no judgement of its own. Every rule that fired and every check appears in it, tested by comparing the JSON with the Markdown.
+- `explain.py` traces the GATE decision; it does not explain the model predictions (SHAP/LIME, Phase B). Suggested actions are generic hints. **OPEN:** review the hint wording with your supervisor before quoting it.
+- Bug found by a test: a must-pass check that was UNAVAILABLE (for example latency) produced the check-specific advice "reduce model size". Advice is now limited to checks that actually FAILED or WARNED; missing evidence gets the "supply the inputs" advice.
+- An MQS without sufficient evidence is shown as "n/a (insufficient evidence; recorded value ...)" with the worst case beside it.
+- **OPEN:** an HTML report with charts, and a comparison report between two models, are Phase B.

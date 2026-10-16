@@ -106,8 +106,8 @@ def _summary(decision: Decision, rules: list[TriggeredRule], card: ScoreCard,
                else "the score is below the rejection threshold"
                if any(r.kind == RuleKind.SCORE for r in effect_rules)
                else "a critical rule fired")
-        return f"ROLLBACK recommended ({mqs}; {why}): {names}."
-    return (f"HOLD: the model needs review before promotion ({mqs}). "
+        return f"ROLLBACK recommended: {why}. {mqs}. Reason(s): {names}."
+    return (f"HOLD: the model needs review before promotion. {mqs}. "
             f"{len(effect_rules)} issue(s): {names}.")
 
 

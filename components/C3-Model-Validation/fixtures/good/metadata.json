@@ -59,10 +59,10 @@
     "native-country"
   ],
   "code": {
-    "commit": "43d92d5df40fdeb11d2bdf634e180d5a338af15c",
-    "uncommitted_source_changes": false
+    "commit": "50ff3c5c9eba08b7d66cd85f210293a9da408a05",
+    "uncommitted_source_changes": true
   },
-  "trained_at_utc": "2026-10-15T13:34:59+00:00",
+  "trained_at_utc": "2026-10-16T13:08:07+00:00",
   "model_type": "LogisticRegression",
   "hyperparameters": {
     "max_iter": 1000,
