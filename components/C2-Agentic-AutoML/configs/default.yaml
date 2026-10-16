@@ -14,7 +14,12 @@ profile:
   large_rows: 200000        # more rows than this = "large" dataset
   many_categorical_ratio: 0.3
 
-# Used later by Agent 1 Level 4 and Agent 2
+# Trial budget for one C2 run (shared by all families and rounds)
 budget:
   total_trials: 150
   max_rounds: 4
+
+# Agent 2 - hyperparameter optimization
+hpo:
+  method: tpe               # tpe = Baseline B2, random = Baseline B1
+  pruning: true             # stop clearly bad trials after a few CV folds

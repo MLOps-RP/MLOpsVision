@@ -1,6 +1,6 @@
 """Cross-validated training (trusted tool). Agent 1 reads these results; it never trains models itself."""
 import time
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -20,14 +20,19 @@ def make_splitter(task_type: TaskType, folds: int, seed: int):
 
 def cross_validate_family(family: str, X: pd.DataFrame, y: pd.Series, task_type: TaskType,
                           metric: str, folds: int = 5, seed: int = 42,
-                          params: Optional[dict] = None) -> dict:
-    """Train one model family with CV. Returns train/validation scores and out-of-fold predictions."""
+                          params: Optional[dict] = None,
+                          on_fold: Optional[Callable[[int, list[float]], None]] = None) -> dict:
+    """Train one model family with CV. Returns train/validation scores and out-of-fold predictions.
+
+    on_fold(fold_index, val_scores_so_far) is called after each fold. Agent 2 uses it to let
+    Optuna stop (prune) a bad trial early by raising optuna.TrialPruned.
+    """
     scorer = get_scorer(metric)
     splitter = make_splitter(task_type, folds, seed)
     train_scores, val_scores, fit_times = [], [], []
     oof_pred = np.zeros(len(y), dtype=y.dtype)
 
-    for train_idx, val_idx in splitter.split(X, y):
+    for fold, (train_idx, val_idx) in enumerate(splitter.split(X, y)):
         model = make_model(family, task_type, params, seed)
         X_tr, y_tr = X.iloc[train_idx], y.iloc[train_idx]
         X_va, y_va = X.iloc[val_idx], y.iloc[val_idx]
@@ -37,6 +42,8 @@ def cross_validate_family(family: str, X: pd.DataFrame, y: pd.Series, task_type:
         train_scores.append(scorer(model, X_tr, y_tr))
         val_scores.append(scorer(model, X_va, y_va))
         oof_pred[val_idx] = np.ravel(model.predict(X_va))
+        if on_fold is not None:
+            on_fold(fold, val_scores)
 
     return {
         "family": family,
