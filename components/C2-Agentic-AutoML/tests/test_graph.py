@@ -11,7 +11,7 @@ from c2_automl.schemas import C2Output, TaskType
 from c2_automl.tools.holdout import fit_final_model, holdout_metrics
 
 EXPECTED_NODES = ["load_input", "profile_task", "agent1_select", "agent2_hpo", "evaluate",
-                  "agent1_diagnose", "agent3_select", "package_output"]
+                  "agent1_diagnose", "agent2_adapt", "agent3_select", "package_output"]
 
 
 # ---------- graph structure ----------
@@ -59,11 +59,12 @@ def tmp_project(tmp_path, monkeypatch):
     return tmp_path
 
 
-def test_full_workflow_end_to_end(tmp_project):
-    final = build_graph().invoke({"dataset_id": "tiny", "total_trials": 6, "folds": 3})
+def test_single_round_workflow(tmp_project):
+    final = build_graph().invoke({"dataset_id": "tiny", "total_trials": 6, "folds": 3,
+                                  "overrides": {"budget": {"max_rounds": 1}}})
 
     out = C2Output(**final["output"])                  # output matches the contract
-    assert out.total_trials == 6 and out.rounds == 1
+    assert out.total_trials == 6 and out.rounds == 1 and out.stop_reason == "max_rounds"
     assert out.model_family in final["families"]
     assert "roc_auc" in out.metrics_holdout
     for path in (out.selected_model_path, out.search_history_path, out.reasoning_log_path):
@@ -71,3 +72,17 @@ def test_full_workflow_end_to_end(tmp_project):
 
     agents = {e["agent"] for e in json.loads(Path(out.reasoning_log_path).read_text())}
     assert agents == {"agent1", "agent2", "agent3"}
+
+
+def test_adaptive_loop_runs_several_rounds(tmp_project):
+    final = build_graph().invoke({"dataset_id": "tiny", "total_trials": 12, "folds": 3,
+                                  "overrides": {"budget": {"max_rounds": 2},
+                                                "adaptive": {"min_improvement": -1}}})
+    out = C2Output(**final["output"])
+    assert out.rounds == 2 and out.stop_reason == "max_rounds"
+    assert out.total_trials == 12                       # never more than the budget
+    assert len(out.score_by_round) == 2
+    assert out.score_by_round[1] >= out.score_by_round[0]   # best-so-far never gets worse
+    assert {r["round"] for r in final["trial_rows"]} == {1, 2}
+    steps = [e["step"] for e in final["reasoning_log"]]
+    assert "adapt_spaces" in steps and steps.count("decide_next_round") == 2

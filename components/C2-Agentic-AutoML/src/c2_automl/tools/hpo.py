@@ -8,7 +8,7 @@ from optuna.pruners import MedianPruner, NopPruner
 from optuna.samplers import RandomSampler, TPESampler
 
 from ..schemas import TaskType
-from .search_space import suggest_params
+from .search_space import in_space, suggest_params, to_distributions
 from .train_eval import cross_validate_family
 
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -25,11 +25,23 @@ def make_sampler(method: str, seed: int) -> optuna.samplers.BaseSampler:
 def tune_family(family: str, space: dict, X: pd.DataFrame, y: pd.Series, task_type: TaskType,
                 metric: str, n_trials: int, folds: int = 5, seed: int = 42,
                 method: str = "tpe", pruning: bool = True, study_name: Optional[str] = None,
-                storage: Optional[str] = None, enqueue: Optional[list[dict]] = None) -> optuna.Study:
-    """Run one Optuna study. Every trial is a full CV run; evidence is stored as trial user attributes."""
+                storage: Optional[str] = None, enqueue: Optional[list[dict]] = None,
+                prior_trials: Optional[list[dict]] = None) -> optuna.Study:
+    """Run one Optuna study. Every trial is a full CV run; evidence is stored as trial user attributes.
+
+    prior_trials: completed rows from earlier rounds. Those that fit inside `space` are added to the
+    study as history (warm start), so TPE does not start from zero. They cost no training time and
+    are NOT counted as new trials.
+    """
     pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=1) if pruning else NopPruner()
     study = optuna.create_study(direction="maximize", sampler=make_sampler(method, seed),
                                 pruner=pruner, study_name=study_name, storage=storage)
+    distributions = to_distributions(space)
+    for row in prior_trials or []:
+        if row.get("state") == "COMPLETE" and row.get("mean_val") is not None and in_space(row["params"], space):
+            study.add_trial(optuna.trial.create_trial(
+                params=row["params"], distributions=distributions, value=row["mean_val"],
+                user_attrs={"warm_start": True}))
     for params in enqueue or []:
         study.enqueue_trial(params)
 
@@ -55,9 +67,12 @@ def tune_family(family: str, space: dict, X: pd.DataFrame, y: pd.Series, task_ty
 
 def study_to_records(study: optuna.Study, family: str, method: str, round_no: int,
                      run_id: str) -> list[dict]:
-    """Turn every trial (complete AND pruned) into a flat row: this is the search history."""
+    """Turn every trial (complete AND pruned) into a flat row: this is the search history.
+    Warm-start trials copied from earlier rounds are skipped (they are already in the history)."""
     rows = []
     for t in study.trials:
+        if t.user_attrs.get("warm_start"):
+            continue
         val_scores = t.user_attrs.get("val_scores", [])
         mean_train = t.user_attrs.get("mean_train")
         mean_val = t.value if t.value is not None else (float(np.mean(val_scores)) if val_scores else None)

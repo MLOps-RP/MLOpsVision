@@ -1,0 +1,62 @@
+# Agent 2 Level 4 - how Agent 1's actions change the search ranges.
+# Multipliers are applied to the CURRENT range, so repeated actions keep moving it.
+# A parameter that a family does not have is simply skipped.
+
+actions:
+  shrink_depth_range:            # overfitting -> simpler trees
+    max_depth:  {high: 0.6}
+    depth:      {high: 0.75}
+    num_leaves: {high: 0.5}
+
+  increase_regularization:       # overfitting -> stronger penalties
+    reg_lambda:        {low: 10, high: 5}
+    l2_leaf_reg:       {low: 2,  high: 2}
+    min_child_weight:  {low: 2,  high: 2}
+    min_child_samples: {low: 2,  high: 2}
+    min_samples_leaf:  {low: 2,  high: 2}
+    C:                 {low: 0.1, high: 0.1}   # logistic regression: smaller C = stronger penalty
+
+  widen_depth_range:             # underfitting -> more complex trees
+    max_depth:  {high: 1.5}
+    depth:      {high: 1.25}
+    num_leaves: {high: 2}
+
+  increase_n_estimators:         # underfitting -> more trees
+    n_estimators: {low: 1.5, high: 2}
+    iterations:   {low: 1.5, high: 2}
+
+  lower_learning_rate:
+    learning_rate: {high: 0.5}
+
+  enable_class_weights:          # class imbalance -> ADD a weighting parameter
+    add_params:
+      random_forest:       {class_weight: {type: cat, choices: [balanced, balanced_subsample]}}
+      logistic_regression: {class_weight: {type: cat, choices: [balanced]}}
+      lightgbm:            {class_weight: {type: cat, choices: [balanced]}}
+      catboost:            {auto_class_weights: {type: cat, choices: [Balanced, SqrtBalanced]}}
+      xgboost:             {scale_pos_weight: {type: float, low: 1.0, high: auto, log: true}}  # binary only; auto = majority/minority
+
+# Hard limits: no range may ever go outside these values
+limits:
+  max_depth:         [2, 40]
+  depth:             [2, 10]
+  num_leaves:        [4, 512]
+  n_estimators:      [50, 2000]
+  iterations:        [50, 2000]
+  learning_rate:     [0.001, 0.5]
+  reg_lambda:        [0.0001, 100]
+  l2_leaf_reg:       [0.1, 100]
+  min_child_weight:  [0.1, 100]
+  min_child_samples: [2, 300]
+  min_samples_leaf:  [1, 100]
+  max_features:      [0.1, 1.0]
+  subsample:         [0.3, 1.0]
+  colsample_bytree:  [0.3, 1.0]
+  C:                 [0.00001, 1000]
+  alpha:             [0.00001, 1000]
+  scale_pos_weight:  [1.0, 1000]
+
+# Range-edge rule: if the best value lies in the outer 10% of a range, extend that side
+edge:
+  tolerance: 0.1
+  factor: 1.5

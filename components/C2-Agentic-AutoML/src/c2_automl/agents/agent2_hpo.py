@@ -3,8 +3,7 @@
 Level 1: evaluate default parameters            -> Baseline B0
 Level 2: static Optuna search (TPE or random)    -> Baselines B2 (TPE) and B1 (random)
 Level 3: pruning, SQLite storage, trial budget from Agent 1
-
-Level 4 (next step) will adapt the search spaces using Agent 1's actions.
+Level 4: adapt the search spaces using Agent 1's actions + warm start from earlier rounds
 """
 from datetime import datetime
 from typing import Optional
@@ -14,7 +13,7 @@ import pandas as pd
 from ..config import OUTPUT_DIR
 from ..schemas import C1Output, ReasoningEntry, TaskProfile
 from ..tools.hpo import study_to_records, tune_family
-from ..tools.search_space import load_base_space
+from ..tools.search_space import adapt_space, clip_to_space, in_space, load_base_space
 from ..tools.train_eval import cross_validate_family
 
 
@@ -68,11 +67,13 @@ def split_budget(total_trials: int, families: list[str],
 def run_hpo(families: list[str], budget: dict[str, int], X: pd.DataFrame, y: pd.Series,
             c1: C1Output, profile: TaskProfile, cfg: dict, run_id: str, method: str = "tpe",
             round_no: int = 1, spaces: Optional[dict[str, dict]] = None,
-            use_storage: bool = True) -> tuple[list[dict], dict[str, dict], ReasoningEntry]:
+            use_storage: bool = True, warm_start: Optional[dict[str, dict]] = None
+            ) -> tuple[list[dict], dict[str, dict], ReasoningEntry]:
     """Tune every family with its share of the budget.
 
     Returns (trial rows for the search history, best result per family, reasoning entry).
     `spaces` lets Level 4 pass adapted ranges; by default the static base spaces are used.
+    `warm_start` (Level 4): family -> {"prior_rows": [...], "best_params": {...}} from earlier rounds.
     """
     hpo_cfg = cfg["hpo"]
     storage = f"sqlite:///{OUTPUT_DIR / 'optuna.db'}" if use_storage else None
@@ -82,10 +83,17 @@ def run_hpo(families: list[str], budget: dict[str, int], X: pd.DataFrame, y: pd.
     rows, best = [], {}
     for family in families:
         space = (spaces or {}).get(family) or load_base_space(family)
+        ws = (warm_start or {}).get(family, {})
+        # If the old best still fits the new space it is already in the warm-start history.
+        # Otherwise (range moved, parameter added) try a clipped copy of it first.
+        best_params = ws.get("best_params")
+        enqueue = ([clip_to_space(best_params, space)]
+                   if best_params and not in_space(best_params, space) else None)
         study = tune_family(
             family, space, X, y, c1.task_type, profile.metric, n_trials=budget[family],
-            folds=cfg["cv_folds"], seed=cfg["seed"], method=method, pruning=hpo_cfg["pruning"],
-            study_name=f"{run_id}_r{round_no}_{family}", storage=storage)
+            folds=cfg["cv_folds"], seed=cfg["seed"], method=method,
+            pruning=hpo_cfg["pruning"], study_name=f"{run_id}_r{round_no}_{family}",
+            storage=storage, enqueue=enqueue, prior_trials=ws.get("prior_rows"))
         family_rows = study_to_records(study, family, method, round_no, run_id)
         rows += family_rows
         complete = [r for r in family_rows if r["state"] == "COMPLETE"]
@@ -101,8 +109,36 @@ def run_hpo(families: list[str], budget: dict[str, int], X: pd.DataFrame, y: pd.
         evidence={f: {"best_val": b["mean_val"], "gap": b["gap"], "params": b["params"],
                       "n_complete": b["n_complete"], "n_pruned": b["n_pruned"]}
                   for f, b in best.items()},
-        rationale=f"{method} search with static base spaces; pruning={hpo_cfg['pruning']}")
+        rationale=(f"{method} search, round {round_no}, "
+                   f"{'adapted' if spaces else 'static base'} spaces; pruning={hpo_cfg['pruning']}"))
     return rows, best, entry
+
+
+# ---------- Level 4 ----------
+def adapt_spaces(families: list[str], plan_actions: dict[str, list[str]], current: dict[str, dict],
+                 round_best: dict[str, dict], rules: dict, context: dict, round_no: int,
+                 enabled: bool = True) -> tuple[dict[str, dict], ReasoningEntry]:
+    """Turn Agent 1's actions into new ranges for the next round (one call per round).
+
+    enabled=False keeps the ranges unchanged (ablation: "no range adaptation").
+    """
+    spaces, changes = {}, {}
+    for family in families:
+        space = current.get(family) or load_base_space(family)
+        if enabled:
+            best_params = round_best.get(family, {}).get("params")
+            space, family_changes = adapt_space(space, plan_actions.get(family, []), family, rules,
+                                                best_params=best_params, context=context)
+            changes[family] = family_changes
+        spaces[family] = space
+    n = sum(len(c) for c in changes.values())
+    entry = ReasoningEntry(
+        round=round_no, agent="agent2", step="adapt_spaces",
+        decision={"changes": changes, "enabled": enabled},
+        evidence={f: plan_actions.get(f, []) for f in families},
+        rationale=(f"{n} range changes for round {round_no}" if enabled
+                   else "range adaptation disabled (ablation)"))
+    return spaces, entry
 
 
 def save_history(rows: list[dict], path) -> pd.DataFrame:

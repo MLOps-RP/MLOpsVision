@@ -14,6 +14,7 @@ class C2State(TypedDict, total=False):
     dataset_id: str
     total_trials: int
     folds: int
+    overrides: dict                           # optional config overrides (used for ablations)
 
     # set by load_input / profile_task
     run_id: str
@@ -25,10 +26,13 @@ class C2State(TypedDict, total=False):
     # Agent 1 -> Agent 2
     families: list[str]
     budget: dict[str, int]
+    spaces: dict[str, dict]                   # current search space per family (Agent 2 Level 4)
 
-    # Agent 2 -> evaluate
+    # Agent 2 -> evaluate / Agent 3
     trial_rows: Annotated[list[dict], operator.add]   # full search history (all rounds)
-    candidates: dict[str, dict]                        # best trial per family (this round)
+    round_candidates: dict[str, dict]                  # best trial per family, THIS round
+    candidates: dict[str, dict]                        # best trial per family, ALL rounds
+    best_history: Annotated[list[float], operator.add] # best score so far, after each round
 
     # evaluate -> Agent 1 diagnose
     signals: dict[str, dict]

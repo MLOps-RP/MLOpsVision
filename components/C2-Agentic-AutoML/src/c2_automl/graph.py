@@ -1,4 +1,4 @@
-"""The C2 workflow as a LangGraph graph (Step 3: one round, rule-based, no LLM)."""
+"""The C2 workflow as a LangGraph graph (Step 4: adaptive multi-round loop, rule-based, no LLM)."""
 from langgraph.graph import END, START, StateGraph
 
 from . import nodes
@@ -14,6 +14,7 @@ def build_graph():
     g.add_node("agent2_hpo", nodes.agent2_hpo)
     g.add_node("evaluate", nodes.evaluate)
     g.add_node("agent1_diagnose", nodes.agent1_diagnose)
+    g.add_node("agent2_adapt", nodes.agent2_adapt)
     g.add_node("agent3_select", nodes.agent3_select)
     g.add_node("package_output", nodes.package_output)
 
@@ -23,9 +24,10 @@ def build_graph():
     g.add_edge("agent1_select", "agent2_hpo")
     g.add_edge("agent2_hpo", "evaluate")
     g.add_edge("evaluate", "agent1_diagnose")
-    # Step 4 replaces this edge with a conditional edge:
-    #   agent1_diagnose -> (next round) agent2_hpo   OR   (stop) agent3_select
-    g.add_edge("agent1_diagnose", "agent3_select")
+    # The adaptive loop: Agent 1 decides "continue" (-> new ranges -> tune again) or "stop"
+    g.add_conditional_edges("agent1_diagnose", nodes.route_after_diagnosis,
+                            ["agent2_adapt", "agent3_select"])
+    g.add_edge("agent2_adapt", "agent2_hpo")
     g.add_edge("agent3_select", "package_output")
     g.add_edge("package_output", END)
 

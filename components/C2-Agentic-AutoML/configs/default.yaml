@@ -17,9 +17,15 @@ profile:
 # Trial budget for one C2 run (shared by all families and rounds)
 budget:
   total_trials: 150
-  max_rounds: 4
+  max_rounds: 3
 
 # Agent 2 - hyperparameter optimization
 hpo:
   method: tpe               # tpe = Baseline B2, random = Baseline B1
   pruning: true             # stop clearly bad trials after a few CV folds
+
+# Agent 1 Level 4 + Agent 2 Level 4 - the adaptive loop
+adaptive:
+  adapt_ranges: true        # false = ablation "no range adaptation"
+  adapt_families: true      # false = ablation "never drop a family"
+  min_improvement: 0.0005   # stop when the best score improves less than this in a round

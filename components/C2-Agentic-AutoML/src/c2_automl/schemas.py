@@ -91,4 +91,6 @@ class C2Output(BaseModel):
     reasoning_log_path: str
     total_trials: int
     rounds: int
+    score_by_round: list[float] = []               # best CV score after each round
+    stop_reason: Optional[str] = None
     referrals_to_c1: list[str] = []

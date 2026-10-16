@@ -3,9 +3,12 @@
 Level 1: eligible families from the registry
 Level 2: profile-aware initial selection
 Level 3: rule-based diagnosis + plan for the next round
+Level 4: multi-round control - round budget and the continue / stop decision
 
 All functions are pure (no training here), so they are easy to unit test.
 """
+from typing import Optional
+
 from ..schemas import (C1Output, Diagnosis, DiagnosisLabel, PlanDecision, ReasoningEntry,
                        TaskProfile)
 
@@ -128,3 +131,52 @@ def plan_next_round(diagnoses: list[Diagnosis], rules: dict, round_no: int
                            evidence={d.model_family: [l.value for l in d.labels] for d in diagnoses},
                            rationale=plan.rationale)
     return plan, entry
+
+
+# ---------- Level 4 ----------
+def round_budget(total_trials: int, trials_used: int, round_no: int, max_rounds: int,
+                 n_families: int) -> int:
+    """Trials for this round: the remaining budget shared equally over the remaining rounds.
+    The last round gets everything that is left. Every family gets at least one trial."""
+    remaining = total_trials - trials_used
+    if remaining < n_families:
+        return 0
+    rounds_left = max(max_rounds - round_no + 1, 1)
+    return max(n_families, remaining // rounds_left)
+
+
+def decide_next_round(plan: PlanDecision, round_no: int, best_history: list[float],
+                      trials_used: int, total_trials: int, max_rounds: int,
+                      min_improvement: float) -> tuple[Optional[str], ReasoningEntry]:
+    """Decide whether to run another round. Returns (stop_reason, entry); stop_reason None = continue.
+
+    Stop rules, checked in this order:
+      weak_features  - every family is barely better than a dummy model (C1 must fix the features)
+      max_rounds     - the round limit is reached
+      budget_used    - not enough trials left for one trial per family
+      converged      - the best score improved less than min_improvement in the last round
+    """
+    improvement = best_history[-1] - best_history[-2] if len(best_history) >= 2 else None
+    remaining = total_trials - trials_used
+
+    if plan.stop:
+        reason = "weak_features"
+    elif round_no >= max_rounds:
+        reason = "max_rounds"
+    elif remaining < len(plan.families_next_round):
+        reason = "budget_used"
+    elif improvement is not None and improvement < min_improvement:
+        reason = "converged"
+    else:
+        reason = None
+
+    evidence = {"round": round_no, "max_rounds": max_rounds, "best_history": best_history,
+                "improvement": improvement, "trials_used": trials_used, "trials_left": remaining}
+    rationale = (f"stop: {reason}" if reason else
+                 f"continue to round {round_no + 1} with {plan.families_next_round}")
+    if improvement is not None:
+        rationale += f" (last improvement {improvement:+.4f})"
+    entry = ReasoningEntry(round=round_no, agent="agent1", step="decide_next_round",
+                           decision={"continue": reason is None, "stop_reason": reason},
+                           evidence=evidence, rationale=rationale)
+    return reason, entry
