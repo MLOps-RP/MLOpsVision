@@ -11,3 +11,4 @@ data/c1_output/
 outputs/
 catboost_info/
 mlruns/
+.DS_Store
