@@ -1,0 +1,20 @@
+seed: 42
+cv_folds: 5
+test_size: 0.2
+
+# Main metric per task type (scikit-learn scorer names; higher is always better)
+metrics:
+  binary: roc_auc
+  multiclass: f1_macro
+  regression: neg_root_mean_squared_error
+
+# Used by Agent 1 to describe the dataset (task profile)
+profile:
+  small_rows: 1000          # fewer rows than this = "small" dataset
+  large_rows: 200000        # more rows than this = "large" dataset
+  many_categorical_ratio: 0.3
+
+# Used later by Agent 1 Level 4 and Agent 2
+budget:
+  total_trials: 150
+  max_rounds: 4
