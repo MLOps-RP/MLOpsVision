@@ -1,0 +1,111 @@
+AI-DRIVEN INTEGRATED MLOPS PLATFORM English Explanation of Research
+Components (J26-SE-324)
+
+OVERVIEW The system automates decisions across the machine learning
+lifecycle. A user uploads a dataset. C1 prepares high-quality features,
+C2 trains and selects models, C3 validates their quality, and C4
+monitors production and initiates corrective action. C4 can send work
+back to C1 or C2; replacement models must pass C3.
+
+C1 - AUTONOMOUS FEATURE INTELLIGENCE ENGINE Purpose: Convert raw data
+into reproducible, leakage-safe, high-quality features. 1. Dataset
+profiling: analyze missing values, class distributions, feature types,
+feature-target relationships and complexity. 2. Adaptive preprocessing:
+choose mean/median/KNN/MICE imputation and, where appropriate,
+SMOTE/ADASYN/Tomek Links/class weighting based on dataset
+characteristics. 3. Feature engineering: generate useful candidate
+features, such as a combined study-hours and attendance indicator. 4.
+Hybrid selection: use Mutual Information, SHAP, RFE and evolutionary
+search. 5. Feature Quality Score: assess predictive power, stability,
+missingness and redundancy. The scoring formula and weights must be
+designed and evaluated. Output: Cleaned selected features, preprocessing
+pipeline, FQS results and decision logs for C2. Novelty: Dataset-aware
+adaptive preprocessing integrated with multidimensional feature quality
+assessment. Tools: Python, Pandas, NumPy, Scikit-learn, SHAP.
+
+C2 - AGENTIC AUTOML MODEL GENERATION AND SELECTION ENGINE Purpose: Train
+and tune candidate models and reason about why earlier attempts
+succeeded or failed. Agent 1, Adaptive Model Generation: select Random
+Forest, XGBoost, LightGBM or CatBoost candidates; diagnose underfitting,
+overfitting, imbalance, weak features and unsuitable model families;
+change the next search round, refer feature issues to C1 and respect C3
+rejections. Agent 2, Hyperparameter Optimization: use Optuna/TPE; adapt
+search ranges based on diagnoses, rather than keeping them fixed; return
+full trial evidence. Agent 3, Multi-Objective Selection: balance
+accuracy, prediction latency and complexity using Pareto-frontier
+tradeoffs. LLM agents act as bounded orchestrators over structured
+evidence; trusted training tools execute the actual computations.
+Output: Selected model artifact, tuned parameters, performance evidence,
+search history and auditable reasoning for C3. Novelty:
+Diagnosis-conditioned changes to candidate selection and hyperparameter
+ranges. Tools sugest (not must): Pytho, LangGraph, LLM API, Optuna, FastAPI and ML
+libraries.
+
+C3 - AUTOMATED MODEL QUALITY AND VALIDATION GATE Purpose: Check whether
+a candidate model is safe, fair, reliable and ready for deployment.
+Layer 1, Training Validity: check leakage, train/test splits,
+duplicates, conflicting labels and reproducibility. Layer 2, Model
+Behavior: evaluate accuracy and related metrics, fairness, robustness,
+calibration and subgroup performance; use clustering to discover hidden
+failure groups. Layer 3, Operational Readiness: assess latency,
+resources, artifacts, security and rollback capability. Combine results
+into a Model Quality Score (MQS), illustrated on a 0-100 scale. Specific
+scoring weights and thresholds require implementation decisions. Use
+rules and critical-failure checks to decide PROMOTE (ready), HOLD
+(review/improvement needed) or ROLLBACK (serious issue requiring an
+applicable previous version). Explain findings with SHAP/LIME and
+generate audit reports. Output: Validation report, MQS, deployment
+decision, explanations and feedback to C2. Novelty: Unified multilayer
+quality score with explainable automated release decisions. Tools:
+Python, FastAPI, Scikit-learn, Fairlearn, Foolbox, SHAP, LIME, YAML,
+Docker.
+
+C4 - AUTOMATED DRIFT DETECTION AND PRODUCTION MODEL MONITORING ENGINE
+Purpose: Monitor deployed models, diagnose degradation and select
+controlled recovery actions. 1. Monitor input distributions,
+predictions, confidence and performance. 2. Detect data drift (input
+changes), prediction drift (output distribution changes) and possible
+concept drift (input-target relationship changes; labels are generally
+needed for confirmation). 3. Diagnose affected features, subgroups or
+model behavior. 4. Assess severity using magnitude, persistence,
+affected scope and performance evidence. 5. Choose remediation: send
+feature issues to C1, model issues to C2 or trigger rollback for
+critical issues. 6. Revalidate every replacement model through C3 before
+promotion. Output: Drift evidence, diagnosis, severity, remediation
+action, audit history and recovery result. Novelty: Diagnosis-driven
+remediation linked to validation in a closed loop. Tools: Python,
+FastAPI, MLflow, PostgreSQL, Redis, Grafana, Docker.
+
+PRACTICAL EXAMPLE: LOAN DEFAULT PREDICTION Illustrative example, not a
+mandatory proposal dataset. Upload customer data. C1 cleans and selects
+features. C2 trains and tunes several models. C3 validates accuracy,
+fairness and readiness. A passing model is deployed. C4 monitors
+incoming data and performance. If features degrade, C4 requests C1
+changes; if the model needs improvement, it requests C2 retraining. C3
+validates replacements.
+
+IMPLEMENTATION PLAN Phase 1: Build FastAPI backend, upload flow,
+experiment identifiers, storage, model artifacts and component
+contracts. Phase 2: Implement a working C1 -> C2 -> C3 baseline
+pipeline. Phase 3: Simulate production data and create basic C4
+monitoring. Phase 4: Implement C1 adaptive preprocessing/FQS, C2
+diagnosis-conditioned search, C3 integrated MQS and C4
+diagnosis-conditioned remediation. Phase 5: Evaluate each contribution
+against baseline approaches with repeatable experiments.
+
+EVALUATION C1: Accuracy, precision, recall, F1, ROC-AUC, feature
+quality, stability, preprocessing effectiveness and efficiency. C2:
+Diagnosis accuracy/effectiveness, search efficiency, Pareto selection
+quality and constraint compliance. C3: MQS effectiveness, decision
+correctness, hidden-failure discovery, fairness, robustness, calibration
+and operational performance. C4: Drift detection precision/recall/F1,
+false alarms, detection latency, diagnosis accuracy, severity
+classification and recovery improvement.
+
+KEY TAKEAWAY This is a research project, not just a software
+application. Each component needs both a working implementation and
+experimental evidence of its contribution. Components should be
+independently testable and connected through documented interfaces.
+
+
+https://chatgpt.com/share/6ad1b876-c590-83e8-9b84-261c7e4cc3d7

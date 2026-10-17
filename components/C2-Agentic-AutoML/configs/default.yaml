@@ -1,0 +1,31 @@
+seed: 42
+cv_folds: 5
+test_size: 0.2
+
+# Main metric per task type (scikit-learn scorer names; higher is always better)
+metrics:
+  binary: roc_auc
+  multiclass: f1_macro
+  regression: neg_root_mean_squared_error
+
+# Used by Agent 1 to describe the dataset (task profile)
+profile:
+  small_rows: 1000          # fewer rows than this = "small" dataset
+  large_rows: 200000        # more rows than this = "large" dataset
+  many_categorical_ratio: 0.3
+
+# Trial budget for one C2 run (shared by all families and rounds)
+budget:
+  total_trials: 150
+  max_rounds: 3
+
+# Agent 2 - hyperparameter optimization
+hpo:
+  method: tpe               # tpe = Baseline B2, random = Baseline B1
+  pruning: true             # stop clearly bad trials after a few CV folds
+
+# Agent 1 Level 4 + Agent 2 Level 4 - the adaptive loop
+adaptive:
+  adapt_ranges: true        # false = ablation "no range adaptation"
+  adapt_families: true      # false = ablation "never drop a family"
+  min_improvement: 0.0005   # stop when the best score improves less than this in a round

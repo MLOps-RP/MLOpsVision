@@ -1,0 +1,16 @@
+families:
+  logistic_regression:
+    tasks: [binary, multiclass]
+    role: simple_baseline
+  ridge:
+    tasks: [regression]
+    role: simple_baseline
+  random_forest:
+    tasks: [binary, multiclass, regression]
+  xgboost:
+    tasks: [binary, multiclass, regression]
+  lightgbm:
+    tasks: [binary, multiclass, regression]
+  catboost:
+    tasks: [binary, multiclass, regression]
+    good_for: many_categoricals

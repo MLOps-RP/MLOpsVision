@@ -1,0 +1,41 @@
+# Base (static) hyperparameter search spaces per model family.
+# Stored as DATA so Agent 2 Level 4 can shrink / widen / shift them per diagnosis.
+#   type: int | float | cat     log: true -> sample on a log scale
+
+random_forest:
+  n_estimators:      {type: int,   low: 100,  high: 500}
+  max_depth:         {type: int,   low: 3,    high: 20}
+  min_samples_leaf:  {type: int,   low: 1,    high: 20}
+  max_features:      {type: float, low: 0.3,  high: 1.0}
+
+xgboost:
+  n_estimators:      {type: int,   low: 100,  high: 600}
+  max_depth:         {type: int,   low: 3,    high: 10}
+  learning_rate:     {type: float, low: 0.01, high: 0.3,  log: true}
+  min_child_weight:  {type: float, low: 1,    high: 10,   log: true}
+  subsample:         {type: float, low: 0.6,  high: 1.0}
+  colsample_bytree:  {type: float, low: 0.6,  high: 1.0}
+  reg_lambda:        {type: float, low: 0.001, high: 10,  log: true}
+
+lightgbm:
+  n_estimators:      {type: int,   low: 100,  high: 600}
+  num_leaves:        {type: int,   low: 8,    high: 128,  log: true}
+  max_depth:         {type: int,   low: 3,    high: 12}
+  learning_rate:     {type: float, low: 0.01, high: 0.3,  log: true}
+  min_child_samples: {type: int,   low: 5,    high: 100}
+  subsample:         {type: float, low: 0.6,  high: 1.0}
+  subsample_freq:    {type: cat,   choices: [1]}
+  colsample_bytree:  {type: float, low: 0.6,  high: 1.0}
+  reg_lambda:        {type: float, low: 0.001, high: 10,  log: true}
+
+catboost:
+  iterations:        {type: int,   low: 100,  high: 500}
+  depth:             {type: int,   low: 3,    high: 8}
+  learning_rate:     {type: float, low: 0.01, high: 0.3,  log: true}
+  l2_leaf_reg:       {type: float, low: 1,    high: 10,   log: true}
+
+logistic_regression:
+  C:                 {type: float, low: 0.001, high: 100, log: true}
+
+ridge:
+  alpha:             {type: float, low: 0.001, high: 100, log: true}

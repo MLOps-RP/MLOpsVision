@@ -1,0 +1,29 @@
+# Starting thresholds for the binary metric (ROC-AUC).
+# Tuning and justifying these values is part of the research.
+
+overfitting:
+  min_gap: 0.05             # train score - validation score
+  min_train_score: 0.95
+
+underfitting:
+  max_gap: 0.02
+  max_train_score: 0.80
+
+class_imbalance:
+  max_imbalance_ratio: 0.20 # minority class size / majority class size
+  max_minority_recall: 0.50
+
+weak_features:
+  max_lift: 0.05            # validation score - dummy-model score
+
+unsuitable_model_family:
+  min_gap_to_best: 0.03     # this family is this much worse than the best family
+
+# What Agent 1 asks for after each diagnosis
+actions:
+  overfitting: [shrink_depth_range, increase_regularization]
+  underfitting: [widen_depth_range, increase_n_estimators]
+  class_imbalance: [enable_class_weights]
+  weak_features: [refer_features_to_c1]
+  unsuitable_model_family: [drop_family]
+  healthy: []
