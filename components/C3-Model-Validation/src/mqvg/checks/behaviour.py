@@ -17,6 +17,7 @@ from mqvg.checks.base import (
 )
 from mqvg.checks.calibration import CALIBRATION_CHECKS
 from mqvg.checks.fairness import FAIRNESS_CHECKS
+from mqvg.checks.hidden_failure import HIDDEN_FAILURE_CHECKS
 from mqvg.checks.predictions import EvalPredictions, get_predictions
 from mqvg.checks.robustness import ROBUSTNESS_CHECKS
 from mqvg.config import GateConfig
@@ -152,6 +153,7 @@ def roc_auc(ctx: CheckContext) -> CheckResult:
 BEHAVIOUR_CHECKS.update(FAIRNESS_CHECKS)
 BEHAVIOUR_CHECKS.update(CALIBRATION_CHECKS)
 BEHAVIOUR_CHECKS.update(ROBUSTNESS_CHECKS)
+BEHAVIOUR_CHECKS.update(HIDDEN_FAILURE_CHECKS)
 
 
 def run_behaviour_checks(candidate: LoadedCandidate,

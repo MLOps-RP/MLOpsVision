@@ -74,6 +74,33 @@ evaluation:
   leakage_max_rows: 20000      # rows sampled for the single-feature leakage probe
   leakage_cv_folds: 5
 
+# Hidden Failure Group Detection settings (used only when the check is enabled).
+# Placeholders: see docs/hidden_groups.md for what was and was not evaluated.
+hidden_groups:
+  methods: [tree, kmeans]     # discovery methods; one correction over all groups tested
+  folds: 2                    # cross-fitting: discover on the other folds, test on the held-out one
+  tree_depth: 3
+  tree_min_leaf_fraction: 0.03
+  kmeans_clusters: 8
+  kmeans_weighting: residual  # centres settle where excess errors concentrate (discovery fold only)
+  min_group_rows: 30
+  min_group_fraction: 0.02    # of the held-out fold
+  alpha: 0.05                 # false discovery rate (Benjamini-Hochberg)
+  min_effect: 0.10            # observed error rate must exceed the expected rate by 10 points
+  min_rows: 1000              # below this the check is UNAVAILABLE
+  min_errors: 50
+  recalibrate: true           # Platt-correct the probabilities per fold, using discovery rows only
+  recalibration_trigger_ece: 0.03  # ...but only if the discovery rows' ECE exceeds this
+  max_ece: 0.15               # above this (or the gap below) the check is UNAVAILABLE; loose on purpose
+  max_overall_gap: 0.15       # a large hidden group raises both by itself (see docs/hidden_groups.md)
+  max_categories: 20
+  exclude_features: []        # model features to leave out of the search
+  extra_columns: []           # evaluation-data columns to add (for example a sensitive attribute)
+  report_groups: 10
+  # Decision consequence (the score is always affected through the check's weight):
+  consequence: score_only     # score_only | hold | critical
+  require_assessment: false   # true: an UNAVAILABLE or ERROR result blocks PROMOTE (HOLD)
+
 metadata:
   # Dotted names refer to nested fields of the training metadata.
   required_fields:
@@ -144,6 +171,14 @@ checks:
   calibration.ece:
     weight: 1.5
     thresholds: {target: 0.01, pass_at: 0.05, fail_at: 0.10, floor: 0.25}
+  behaviour.hidden_failure_groups:
+    # Research feature, OFF here so existing scores are unchanged. Enable it
+    # with configs/hidden_groups.yaml (see docs/hidden_groups.md). The value is
+    # the largest excess error rate of a confirmed group (0 = none found), so
+    # any confirmed group is at best a WARN.
+    enabled: false
+    weight: 1.5
+    thresholds: {target: 0.0, pass_at: 0.0, fail_at: 0.25, floor: 0.50}
   robustness.noise_degradation:
     enabled: false        # Phase A prototype leaves robustness off
     weight: 1

@@ -53,6 +53,10 @@ CATALOGUE: tuple[CheckSpec, ...] = (
               "ratio", "Lowest/highest group selection rate (worst over sensitive attributes)"),
     CheckSpec("fairness.equalized_odds", MB, "lower_is_better",
               "difference", "Equalized-odds difference (worst over sensitive attributes)"),
+    CheckSpec("behaviour.hidden_failure_groups", MB, "lower_is_better",
+              "excess error rate",
+              "Largest excess error rate (observed minus the model's own expected "
+              "error) among feature-defined groups found on held-out rows; 0 if none"),
     CheckSpec("calibration.ece", MB, "lower_is_better", "ECE", "Expected calibration error"),
     CheckSpec("robustness.noise_degradation", MB, "lower_is_better",
               "relative F1 drop", "F1 drop under input perturbation"),

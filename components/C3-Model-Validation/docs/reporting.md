@@ -38,6 +38,12 @@ text = render_markdown(result)                 # or just get the Markdown
    configuration hash, machine, library versions and timings.
 8. **Configuration used** and **Limitations**.
 
+The Scores section also writes the MQS arithmetic with the real numbers (for example `MQS = TVS 100.0 × 0.30 + MBS 76.6 × 0.50 + ORS 100.0 × 0.20 = 88.3`, noting dropped dimensions or the penalty) and a three-layers-at-a-glance table. When `behaviour.hidden_failure_groups` is enabled (profile `configs/hidden_groups.yaml`)
+the report also has a **Hidden failure groups** section after the score breakdown: each
+group's rule, method, held-out size, observed versus expected error, excess with its
+95% interval, adjusted p-value and whether it was confirmed, plus the calibration
+safeguard and the features searched. See `docs/hidden_groups.md`.
+
 Nothing is left out: every rule that fired and every check appears in the
 report, so the JSON never has to be opened to understand a decision.
 

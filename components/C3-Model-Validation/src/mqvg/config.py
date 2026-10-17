@@ -20,7 +20,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -142,6 +142,83 @@ class EvaluationConfig(_Strict):
     leakage_cv_folds: int = Field(default=5, ge=2)
 
 
+class HiddenGroupsConfig(_Strict):
+    """Settings for behaviour.hidden_failure_groups (see docs/hidden_groups.md).
+
+    Defaults are placeholders that need justification for a given domain; the
+    detection study in docs/hidden_groups.md shows how they behave on
+    synthetic data only.
+    """
+    # Discovery methods; the confirmed groups are the union, with one
+    # Benjamini-Hochberg correction across every group tested.
+    methods: list[Literal["tree", "kmeans"]] = Field(
+        default_factory=lambda: ["tree", "kmeans"], min_length=1)
+    folds: int = Field(default=2, ge=2, le=10)             # cross-fitting folds
+    tree_depth: int = Field(default=3, ge=1, le=6)
+    tree_min_leaf_fraction: float = Field(default=0.03, gt=0, le=0.5)
+    kmeans_clusters: int = Field(default=8, ge=2, le=50)
+    # "residual" weights each discovery row by its excess error (error minus the
+    # expected error, floored at 0) so cluster centres settle where excess
+    # errors concentrate; "none" is plain k-means. Only discovery-fold labels
+    # are used either way.
+    kmeans_weighting: Literal["none", "residual"] = "residual"
+    # A group must hold at least this many held-out rows, and this share of
+    # the held-out fold, to be tested at all.
+    min_group_rows: int = Field(default=30, ge=10)
+    min_group_fraction: float = Field(default=0.02, ge=0, le=0.5)
+    alpha: float = Field(default=0.05, gt=0, lt=0.5)        # false discovery rate
+    # A group is reported as a failure only if its observed error rate exceeds
+    # the rate the model itself expects by at least this much (0.10 = 10 points).
+    min_effect: float = Field(default=0.10, gt=0, lt=1)
+    # Evidence needed before the test is run at all.
+    min_rows: int = Field(default=1000, ge=100)
+    min_errors: int = Field(default=50, ge=10)
+    # Calibration safeguards. The test compares errors with the model's own
+    # probabilities, so it is invalid if those are unreliable. Two parts:
+    #  * `recalibrate`: the expected errors of each held-out fold come from the
+    #    model's probabilities corrected by a Platt map (a logistic fit on the
+    #    log-odds) learned on the DISCOVERY rows only. This removes systematic
+    #    distortion such as over- or under-confidence without using any
+    #    held-out label. Without it, moderate miscalibration (ECE 0.05-0.08)
+    #    produced false alarms in most of 30 null datasets.
+    #  * above max_ece / max_overall_gap the check is UNAVAILABLE. These are
+    #    loose on purpose: a large hidden group raises both by itself (ECE up
+    #    to ~0.11 was measured for a model that was fine elsewhere), while
+    #    genuinely miscalibrated models measured 0.19 and above.
+    recalibrate: bool = True
+    # ...but only on folds whose discovery rows show miscalibration (ECE above
+    # this). A well-calibrated model needs no correction, and fitting the map on
+    # rows that contain a hidden group lets that group flatten the map and
+    # weaken its own detection.
+    recalibration_trigger_ece: float = Field(default=0.03, ge=0, le=1)
+    max_ece: float = Field(default=0.15, ge=0, le=1)
+    max_overall_gap: float = Field(default=0.15, ge=0, le=1)
+    max_categories: int = Field(default=20, ge=2)           # levels kept per category
+    # Model features to leave out of the search, and extra evaluation-data
+    # columns to include (for example a sensitive attribute the model did not use).
+    exclude_features: list[str] = Field(default_factory=list)
+    extra_columns: list[str] = Field(default_factory=list)
+    report_groups: int = Field(default=10, ge=1)            # groups kept in the details
+
+    # What a result of this check does to the DECISION. It always affects the
+    # score through its weight; this setting is independent of must_pass_checks.
+    #   score_only  nothing beyond the score; never forces a decision (default)
+    #   hold        a confirmed group (WARN or FAIL) blocks PROMOTE (-> HOLD)
+    #   critical    as hold, and a FAIL (excess above the check's fail_at) is a
+    #               critical failure (-> a ROLLBACK recommendation)
+    consequence: Literal["score_only", "hold", "critical"] = "score_only"
+    # If true, a result that could not be assessed (UNAVAILABLE or ERROR) also
+    # blocks PROMOTE. Either way it is never counted as a pass: it leaves the
+    # score average, lowers evidence coverage and is listed as an evidence gap.
+    require_assessment: bool = False
+
+    @model_validator(mode="after")
+    def _unique_methods(self) -> HiddenGroupsConfig:
+        if len(set(self.methods)) != len(self.methods):
+            raise ValueError("methods must not repeat")
+        return self
+
+
 class MetadataConfig(_Strict):
     # Dotted field names looked up in TrainingMetadata.
     required_fields: list[str]
@@ -157,6 +234,7 @@ class GateConfig(_Strict):
     decision: DecisionConfig
     critical_rules: list[CriticalRule] = Field(default_factory=list)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
+    hidden_groups: HiddenGroupsConfig = Field(default_factory=HiddenGroupsConfig)
     metadata: MetadataConfig
     checks: dict[str, CheckConfig]
 
@@ -240,6 +318,12 @@ class GateConfig(_Strict):
                 problems.append(
                     f"critical_rules.{rule.id}: value tests need a numeric check; "
                     f"'{cond.check}' is binary, use status_in")
+        hidden = self.hidden_groups
+        if "behaviour.hidden_failure_groups" not in enabled and (
+                hidden.consequence != "score_only" or hidden.require_assessment):
+            problems.append(
+                "hidden_groups.consequence / require_assessment are set but the check "
+                "'behaviour.hidden_failure_groups' is disabled, so they would do nothing")
         for field in ("required_fields", "reproducibility_fields"):
             if not getattr(self.metadata, field):
                 problems.append(f"metadata.{field}: must not be empty")

@@ -1,0 +1,60 @@
+{
+  "fixture_name": "hidden_group_null",
+  "model_type": "LogisticRegression",
+  "task_type": "binary_classification",
+  "dataset": "synthetic loan decisions",
+  "data_source": "mqvg.synthetic.make_pair (generated)",
+  "target_column": "outcome",
+  "positive_label": "approved",
+  "sensitive_columns": [
+    "sex"
+  ],
+  "excluded_sensitive_features": [
+    "sex"
+  ],
+  "feature_columns": [
+    "age",
+    "income_k",
+    "tenure_years",
+    "segment",
+    "region",
+    "channel"
+  ],
+  "hyperparameters": {
+    "max_iter": 500
+  },
+  "random_state": 2026,
+  "split": {
+    "method": "generated independently",
+    "seed": 2026
+  },
+  "train_rows": 6000,
+  "eval_rows": 3000,
+  "train_data_sha256": "94f307a188338f874be5621092242355a18906a7fdca4c29900895e0400b12d0",
+  "train_row_hashes_file": "fixtures/hidden_group_null/train_row_hashes.txt",
+  "row_hash_columns": [
+    "age",
+    "income_k",
+    "tenure_years",
+    "segment",
+    "region",
+    "channel",
+    "sex"
+  ],
+  "training_metrics": {
+    "accuracy": 0.7018333333333333,
+    "f1": 0.7250653142769325
+  },
+  "versions": {
+    "python": "3.12.1",
+    "scikit_learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "joblib": "1.6.0"
+  },
+  "code": {
+    "commit": "1cf894d322aeefd63a43fb57b8fd79ddbb0beec4",
+    "uncommitted_source_changes": true
+  },
+  "trained_at_utc": "2026-10-16T13:56:21+00:00"
+}

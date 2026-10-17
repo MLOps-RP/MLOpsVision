@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from mqvg.schemas import (
-    CheckStatus, CheckTreatment, Decision, Dimension, ScenarioMode,
+    CheckStatus, MissingPolicy, CheckTreatment, Decision, Dimension, ScenarioMode,
     ValidationResult,
 )
 
@@ -74,6 +74,65 @@ def _banner(result: ValidationResult) -> list[str]:
     return lines
 
 
+SHORT_LABELS = {Dimension.TRAINING_VALIDITY: "TVS", Dimension.MODEL_BEHAVIOUR: "MBS",
+                Dimension.OPERATIONAL_READINESS: "ORS"}
+CONSEQUENCE_MEANING = {
+    "score_only": "the result only affects the score; it never blocks or forces a decision",
+    "hold": "a confirmed group blocks promotion (HOLD)",
+    "critical": "a confirmed group blocks promotion (HOLD) and a severe one (FAIL) is a "
+                "critical failure (ROLLBACK recommendation)",
+}
+
+
+def _mqs_calculation(card) -> str:
+    """The MQS written out with the actual numbers (displayed values are rounded)."""
+    if card.mqs is None:
+        return ("**Calculation:** no dimension had enough evidence, so no MQS was computed.")
+    used = card.effective_weights or card.weights
+    terms, left_out = [], []
+    for dimension, dim in card.dimensions.items():
+        if dim.score is None:
+            if card.missing_policy == MissingPolicy.PENALIZE:
+                terms.append(f"{SHORT_LABELS[dimension]} 0 (no score) × {card.weights[dimension]:.2f}")
+            else:
+                left_out.append(DIMENSION_LABELS[dimension].split(" (")[0])
+            continue
+        terms.append(f"{SHORT_LABELS[dimension]} {dim.score:.1f} × {used[dimension]:.2f}")
+    text = "**Calculation:** MQS = " + " + ".join(terms) + f" = {card.mqs:.1f}"
+    if left_out:
+        text += f" ({', '.join(left_out)}: no score, left out)"
+    return text
+
+
+def _layer_overview(result: ValidationResult) -> list[str]:
+    """The three validation layers side by side, with what needs attention."""
+    rows = []
+    for dimension, dim in result.scorecard.dimensions.items():
+        checks = [c for c in result.checks if c.dimension == dimension]
+        count = lambda *statuses: sum(c.status in statuses for c in checks)   # noqa: E731
+        attention = [c.id for c in checks if c.status in (
+            CheckStatus.WARN, CheckStatus.FAIL, CheckStatus.UNAVAILABLE, CheckStatus.ERROR)]
+        shown = ", ".join(attention[:6]) + (f" (+{len(attention) - 6} more)" if len(attention) > 6 else "")
+        rows.append([DIMENSION_LABELS[dimension], _score(dim.score),
+                     f"{count(CheckStatus.PASS)} pass · {count(CheckStatus.WARN)} warn · "
+                     f"{count(CheckStatus.FAIL)} fail · "
+                     f"{count(CheckStatus.UNAVAILABLE, CheckStatus.ERROR)} no evidence",
+                     shown or "none"])
+    lines = ["### The three layers at a glance", ""]
+    lines += _table(["Layer", "Score", "Checks", "Needs attention"], rows)
+    hidden = next((c for c in result.checks if c.id == "behaviour.hidden_failure_groups"), None)
+    if hidden is None:
+        lines += ["", "Subgroup detection (hidden failure analysis) is switched off in this profile."]
+    elif hidden.status in NO_EVIDENCE:
+        lines += ["", f"Subgroup detection: **not assessed** ({hidden.status.value}). "
+                      "This is not a pass; see the section below."]
+    else:
+        d = hidden.details
+        lines += ["", f"Subgroup detection: **{d.get('groups_confirmed', '?')} confirmed** of "
+                      f"{d.get('groups_tested', '?')} candidate groups tested on held-out rows."]
+    return lines + [""]
+
+
 def _scores(result: ValidationResult) -> list[str]:
     card = result.scorecard
     reliable = card.mqs is not None and card.mqs_sufficient_evidence
@@ -94,16 +153,17 @@ def _scores(result: ValidationResult) -> list[str]:
                      "yes" if dim.provisional else "no"])
     lines += _table(["Dimension", "Score", "Weight", "Evidence", "Checks with evidence",
                      "Provisional"], rows)
+    renormalized = (card.effective_weights and any(
+        d.score is None for d in card.dimensions.values()))
     lines += ["", "`MQS = TVS × W1 + MBS × W2 + ORS × W3`"
               + (" (weights renormalized over the scored dimensions: "
-                 + ", ".join(f"{DIMENSION_LABELS[d].split(' (')[0]} "
-                             f"{w:.2f}" for d, w in card.effective_weights.items())
-                 + ")" if card.effective_weights
-                 and any(d.score is None for d in card.dimensions.values()) else ""), ""]
+                 + ", ".join(f"{DIMENSION_LABELS[d].split(' (')[0]} {w:.2f}"
+                             for d, w in card.effective_weights.items())
+                 + ")" if renormalized else ""), "", _mqs_calculation(card), ""]
     for dimension, dim in card.dimensions.items():
         if dim.note:
             lines.append(f"* {DIMENSION_LABELS[dimension]}: {dim.note}")
-    return lines + [""]
+    return lines + [""] + _layer_overview(result)
 
 
 def _why(result: ValidationResult) -> list[str]:
@@ -151,6 +211,69 @@ def _checks(result: ValidationResult) -> list[str]:
     lines += ["", "*Evidence: MEASURED = computed by the gate from the model and "
                   "data; DECLARED = taken from producer metadata, not verified; "
                   "SIMULATED = injected for a demonstration; UNAVAILABLE = none.*", ""]
+    return lines
+
+
+def _hidden_groups(result: ValidationResult) -> list[str]:
+    """Section for behaviour.hidden_failure_groups; empty when the check did not run."""
+    check = next((c for c in result.checks
+                  if c.id == "behaviour.hidden_failure_groups"), None)
+    if check is None:
+        return []
+    lines = ["## Hidden failure groups", "",
+             "Groups of rows, defined by feature values, where the model makes more "
+             "errors than its own probabilities predict. Each group was found on some "
+             "rows and tested on different, held-out rows.", ""]
+    policy = result.config_snapshot.get("hidden_groups", {})
+    consequence = policy.get("consequence", "score_only")
+    lines += [f"**Decision consequence (configured): `{consequence}`** — "
+              f"{CONSEQUENCE_MEANING.get(consequence, consequence)}. "
+              f"A result that could not be assessed "
+              + ("**blocks promotion**" if policy.get("require_assessment")
+                 else "does not block promotion, but is never counted as a pass")
+              + f". Significance (false discovery rate) {policy.get('alpha')}, "
+                f"minimum effect {policy.get('min_effect')}.", ""]
+    if check.status in NO_EVIDENCE:
+        return lines + [f"**Not assessed.** {_cell(check.message)}", ""]
+    d = check.details
+    groups = d.get("groups", [])
+    confirmed = [g for g in groups if g["confirmed"]]
+    lines.append(f"**{d['groups_confirmed']} confirmed** of {d['groups_tested']} groups tested "
+                 f"(methods: {', '.join(d['methods'])}; false discovery rate {d['alpha']:g}; "
+                 f"minimum effect {d['min_effect']:.0%}). "
+                 + ("" if d["share_of_rows_in_confirmed_groups"] is None else
+                    f"Confirmed groups cover {d['share_of_rows_in_confirmed_groups']:.1%} of rows."))
+    lines.append("")
+    if groups:
+        rows = [[g["rule"], g["method"], g["n_rows"], f"{g['share']:.1%}",
+                 f"{g['observed_error_rate']:.1%}", f"{g['expected_error_rate']:.1%}",
+                 f"{g['effect']:+.1%} [{g['effect_ci'][0]:+.1%}, {g['effect_ci'][1]:+.1%}]",
+                 f"{g['adjusted_p_value']:.1e}", "yes" if g["confirmed"] else "no"]
+                for g in groups]
+        lines += _table(["Group", "Method", "Rows", "Share", "Observed error", "Expected error",
+                         "Excess (95% CI)", "Adjusted p", "Confirmed"], rows)
+        lines.append("")
+        if len(groups) < d["groups_tested"]:
+            lines += [f"*Showing {len(groups)} of {d['groups_tested']} groups tested.*", ""]
+    if not confirmed:
+        lines += ["No group passed both the significance and the effect-size requirement.", ""]
+    folds = d.get("recalibrated_folds", [])
+    if not d.get("recalibration_enabled"):
+        recal = "Recalibration is switched off."
+    elif folds and any(folds):
+        recal = (f"Probabilities were recalibrated (Platt map, discovery rows only) on "
+                 f"{sum(folds)} of {len(folds)} folds.")
+    else:
+        recal = "No fold needed recalibration (discovery-row ECE within the trigger)."
+    ece, gap = d.get("ece"), d.get("overall_gap")
+    lines += ["Calibration safeguard: ECE " + ("n/a" if ece is None else f"{ece:.3f}")
+              + ", observed-versus-expected error gap " + ("n/a" if gap is None else f"{gap:.3f}")
+              + ". " + recal,
+              "", "Features searched: " + ", ".join(d.get("features_used", [])) + "."]
+    if d.get("features_excluded"):
+        lines.append("Left out: " + ", ".join(f"{c} ({why})" for c, why
+                                              in d["features_excluded"].items()) + ".")
+    lines += ["", "*Caveats: " + " ".join(d.get("caveats", [])) + "*", ""]
     return lines
 
 
@@ -226,7 +349,7 @@ def render_markdown(result: ValidationResult) -> str:
     """The complete report as Markdown (LF line endings)."""
     parts = ([f"# Model Quality Validation Report: {_title(result)}", ""]
              + _banner(result) + _scores(result) + _why(result)
-             + _breakdown(result) + _gaps(result) + _checks(result)
+             + _breakdown(result) + _hidden_groups(result) + _gaps(result) + _checks(result)
              + _audit(result) + _configuration(result) + _limits())
     return "\n".join(parts).rstrip("\n") + "\n"
 

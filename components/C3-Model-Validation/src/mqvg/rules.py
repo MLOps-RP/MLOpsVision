@@ -11,6 +11,18 @@ Rules, in the order they are recorded:
    that is UNAVAILABLE, ERROR or missing is not PASS, so absent evidence
    cannot slip through. NOT_APPLICABLE never blocks.
 5. SCORE (-> HOLD): MQS below `decision.promote_at`.
+
+Hidden Failure Group Detection has its own explicit consequence setting
+(`hidden_groups.consequence`), independent of the lists above:
+
+* `score_only` (default): the check only affects the score; no rule is added;
+* `hold`: a confirmed group (WARN or FAIL) adds a BLOCKING rule -> HOLD;
+* `critical`: as `hold`, and a FAIL (excess above the check's `fail_at`) also adds
+  a CRITICAL rule -> ROLLBACK recommendation.
+
+`hidden_groups.require_assessment` additionally blocks PROMOTE when the check
+is UNAVAILABLE or ERROR. A subgroup alone never forces a ROLLBACK unless the
+policy is explicitly `critical`.
 6. If nothing above fired, PROMOTE.
 
 Every rule that fires is recorded (a full audit, not just the first). The
@@ -78,6 +90,54 @@ def _critical_rules(rules: Sequence[CriticalRule],
     return triggered
 
 
+HIDDEN_CHECK = "behaviour.hidden_failure_groups"
+
+
+def _hidden_group_rules(results: dict[str, CheckResult],
+                        config: GateConfig) -> list[TriggeredRule]:
+    """Rules for the configured consequence of Hidden Failure Group Detection."""
+    policy = config.hidden_groups
+    check = results.get(HIDDEN_CHECK)
+    if check is None or not config.checks[HIDDEN_CHECK].enabled:
+        return []
+    rules: list[TriggeredRule] = []
+    if check.status in NO_EVIDENCE:
+        if policy.require_assessment:
+            rules.append(TriggeredRule(
+                rule_id="hidden_failure_groups_not_assessed",
+                name="Hidden failure groups could not be assessed",
+                kind=RuleKind.EVIDENCE, effect=Decision.HOLD,
+                reason=("hidden_groups.require_assessment is set and the check is "
+                        f"{check.status.value}, which is not a pass: {check.message}"),
+                observed=check.status.value, threshold="assessed",
+                check_ids=[HIDDEN_CHECK]))
+        return rules
+    if policy.consequence == "score_only" or check.status not in (
+            CheckStatus.WARN, CheckStatus.FAIL):
+        return rules
+    rules.append(TriggeredRule(
+        rule_id="hidden_failure_groups_hold", name="Hidden failure group found",
+        kind=RuleKind.BLOCKING, effect=Decision.HOLD,
+        reason=(f"{check.message} Policy hidden_groups.consequence is "
+                f"'{policy.consequence}': a confirmed group blocks promotion."),
+        observed=check.raw_value, threshold="no confirmed group",
+        check_ids=[HIDDEN_CHECK]))
+    if policy.consequence == "critical" and check.status == CheckStatus.FAIL:
+        fail_at = config.checks[HIDDEN_CHECK].thresholds.fail_at
+        rules.append(TriggeredRule(
+            rule_id="hidden_failure_groups_critical",
+            name="Severe hidden failure group", kind=RuleKind.CRITICAL,
+            effect=Decision.ROLLBACK,
+            reason=(f"The largest excess error rate of a confirmed group is "
+                    f"{check.raw_value:.1%}, above the check's fail threshold of "
+                    f"{fail_at:.1%}. Policy hidden_groups.consequence is 'critical', "
+                    "so this is a critical failure. This is an association found in "
+                    "the evaluation data, not a proven cause."),
+            observed=check.raw_value, threshold={"fail_at": fail_at},
+            check_ids=[HIDDEN_CHECK]))
+    return rules
+
+
 def _mqs_text(card: ScoreCard) -> str:
     if card.mqs is None:
         return "no MQS could be computed"
@@ -123,6 +183,8 @@ def evaluate_rules(checks: Sequence[CheckResult], scorecard: ScoreCard,
 
     # 1. critical rules
     critical = _critical_rules(config.critical_rules, results)
+    hidden_rules = _hidden_group_rules(results, config)
+    critical += [r for r in hidden_rules if r.kind == RuleKind.CRITICAL]
     rules += critical
 
     # 2. score below the rejection threshold
@@ -191,6 +253,9 @@ def evaluate_rules(checks: Sequence[CheckResult], scorecard: ScoreCard,
                    + (f" ({result.message})" if result else "") + ".",
             observed=None if status is None else status.value,
             threshold="PASS", check_ids=[check_id] if result else []))
+
+    # 4b. the configured consequence of hidden failure groups (non-critical part)
+    rules += [r for r in hidden_rules if r.kind != RuleKind.CRITICAL]
 
     # 5. score below the promotion threshold
     in_hold_band = (mqs is not None and not score_rollback

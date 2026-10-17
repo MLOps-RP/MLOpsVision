@@ -5,6 +5,7 @@ Run from the C3-Model-Validation folder:
     python scripts/validate_models.py                 # all six trained models
     python scripts/validate_models.py leaky biased    # only some
     python scripts/validate_models.py --config configs/strict.yaml
+    python scripts/validate_models.py hidden_group hidden_group_null         --config configs/hidden_groups.yaml          # Hidden Failure Group Detection
 
 For every model it prints the decision, the three dimension scores, the MQS,
 every check with its evidence, and each rule that fired. The full result is
@@ -31,12 +32,14 @@ LABELS = {Dimension.TRAINING_VALIDITY: "TVS  training validity",
 def bundle_for(name: str) -> CandidateBundle:
     folder = PROJECT / "fixtures" / name
     own_eval = folder / "eval.csv"
+    own_hashes = folder / "train_row_hashes.txt"
     return CandidateBundle(
         candidate_id=name,
         model_path=folder / "model.joblib",
         eval_data_path=own_eval if own_eval.exists() else PROJECT / "data" / "eval.csv",
         metadata_path=folder / "metadata.json",
-        train_row_hashes_path=PROJECT / "data" / "train_row_hashes.txt")
+        train_row_hashes_path=(own_hashes if own_hashes.exists()
+                               else PROJECT / "data" / "train_row_hashes.txt"))
 
 
 def number(value) -> str:

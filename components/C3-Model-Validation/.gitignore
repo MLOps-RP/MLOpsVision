@@ -14,3 +14,6 @@ fixtures/**/eval.csv
 
 # Generated validation output
 reports/
+
+# Hidden-group fixtures: large or regenerable files
+fixtures/**/train_row_hashes.txt

@@ -1,0 +1,14 @@
+# Hidden Failure Group Detection that only affects the score.
+#
+# A confirmed group lowers the Model Behaviour score and so the MQS, and it is
+# reported, but it never blocks or forces a decision. A result that could not be
+# assessed is still not a pass: it is excluded from the average, lowers evidence
+# coverage and is listed as an evidence gap.
+extends: hidden_groups.yaml
+
+profile: hidden_groups_score_only
+description: Hidden Failure Group Detection affects the score only, never the decision.
+
+hidden_groups:
+  consequence: score_only
+  require_assessment: false

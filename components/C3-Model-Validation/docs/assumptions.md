@@ -289,3 +289,46 @@ Not done in Step A (still open): an explicit trust-this-model flag (planned for 
 - Bug found by a test: a must-pass check that was UNAVAILABLE (for example latency) produced the check-specific advice "reduce model size". Advice is now limited to checks that actually FAILED or WARNED; missing evidence gets the "supply the inputs" advice.
 - An MQS without sufficient evidence is shown as "n/a (insufficient evidence; recorded value ...)" with the worst case beside it.
 - **OPEN:** an HTML report with charts, and a comparison report between two models, are Phase B.
+
+
+## Hidden Failure Group Detection (research feature)
+
+Full description, evaluation and limitations: `docs/hidden_groups.md`; results:
+`docs/hidden_groups_results.md`. Decisions and findings made while building it:
+
+- **Off by default.** Adding a ninth behaviour check to `default.yaml` would change the
+  MBS and MQS of every model and break the hand-computed scoring tests, so the check is
+  disabled there and enabled by the `hidden_groups*` profiles. Its weight and its decision
+  consequence (`score_only`, `hold` or `critical`, with `require_assessment`) are
+  configurable; the default policy never forces ROLLBACK. Deliberate migration (this
+  feature only): the earlier `must_pass_checks` mechanism was replaced by this explicit
+  policy, and three of its own tests were updated accordingly. **OPEN:** whether
+  it should become part of the default profile once its thresholds are justified.
+- **The first calibration safeguard was wrong, and measuring showed why.** A tight
+  limit on ECE (0.05) and on the overall error gap (0.03) rejected exactly the models
+  with a real hidden group: a large group raises both by itself (ECE up to 0.108 for a
+  model that was fine elsewhere), while grossly miscalibrated models measured 0.19 to
+  0.34. An "ECE outside the groups found" variant was also biased (removing high-error
+  rows from a calibrated model leaves a deficit). Moderate miscalibration (ECE 0.05 to
+  0.08) otherwise produced 19 to 26 false alarms in 30 null datasets, and a
+  "required effect size grows with ECE" slack barely helped (17 to 18 of 30). What
+  worked was **cross-fitted Platt recalibration** (1 of 30 at every level), applied only
+  when the discovery rows show miscalibration, with a loose hard limit (0.15).
+- **Recalibration has a cost:** where a real group is present it can partly absorb the
+  group's effect (shift scenarios: 58 against 73 and 37 against 49 detections of 80).
+- **K-means is weak here.** Plain k-means detected 50 of 800 planted runs, residual-weighted
+  77, the tree 467 and the union 483. The union is kept because it helps for
+  categorical conjunctions at small samples, and because the requirement asks for both;
+  do not describe k-means as a strong detector.
+- **Naive same-data testing is invalid:** fitting a tree to the errors and testing its
+  leaves on the same rows gave a false alarm in 30 of 30 null datasets (audit
+  experiment), which is why discovery and testing use different rows.
+- **Determinism bugs found by tests:** cluster descriptions differed between identical
+  runs because of `-0%` and tied mirror features (`channel=u` / `channel=v`); a results
+  CSV used the string `null`, which pandas reads back as missing.
+- **Open questions:** the defaults (`alpha`, `min_effect`, group-size minimums, depth,
+  number of clusters, the check's thresholds and weight) are unjustified placeholders;
+  the evaluation is synthetic and a single data family; false-alarm control on
+  gradient-boosting models was 7.5% (6 of 80) against the nominal 5%; BH under
+  dependent tests is plausible but not proven; real-data validation (beyond one
+  observation on the Adult `biased` fixture) is missing.

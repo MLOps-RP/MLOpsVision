@@ -60,6 +60,10 @@ CHECK_HINTS = {
     "robustness.noise_degradation":
         "Test with noisier training data or regularisation; check feature "
         "sensitivity.",
+    "behaviour.hidden_failure_groups":
+        "Investigate the reported group: check its data volume and label "
+        "quality, add or engineer features that separate it, or retrain with "
+        "more examples from it.",
     "operational.model_loadable":
         "Check the model path, and that it was saved with joblib or pickle in "
         "a compatible environment.",
@@ -140,6 +144,28 @@ def explain_failures(checks: Sequence[CheckResult], scorecard: ScoreCard,
             f"{'above' if decision.mqs >= config.decision.promote_at else 'below'}"
             f" the promote threshold of {config.decision.promote_at:g}. A good "
             "score cannot outweigh a critical failure.")
+
+    for check in checks:
+        if check.id == "behaviour.hidden_failure_groups" and check.has_evidence:
+            groups = [g for g in check.details.get("groups", []) if g.get("confirmed")]
+            if groups:
+                worst = groups[0]
+                lines.append(
+                    f"Hidden failure group ({worst['method']}): {worst['rule']} — "
+                    f"{worst['n_rows']} held-out rows, observed error "
+                    f"{worst['observed_error_rate']:.1%} vs {worst['expected_error_rate']:.1%} "
+                    f"expected; {len(groups)} confirmed group(s) in total.")
+
+    hidden = next((c for c in checks if c.id == "behaviour.hidden_failure_groups"), None)
+    if hidden is not None:
+        policy = config.hidden_groups
+        lines.append(
+            f"Hidden failure group policy (configured): consequence '{policy.consequence}', "
+            f"assessment {'required' if policy.require_assessment else 'not required'}. "
+            + {"score_only": "The result affects the score only.",
+               "hold": "A confirmed group blocks promotion.",
+               "critical": "A severe confirmed group is a critical failure; a lesser one "
+                           "blocks promotion."}[policy.consequence])
 
     watch = [c.id for c in checks if c.status == CheckStatus.WARN]
     if watch and decision.decision == Decision.PROMOTE:
