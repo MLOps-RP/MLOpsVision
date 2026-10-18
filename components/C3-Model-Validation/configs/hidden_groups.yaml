@@ -1,0 +1,32 @@
+# Default profile plus Hidden Failure Group Detection (research feature).
+#
+# The check is off in default.yaml so that existing scores do not change. This
+# profile switches it on and chooses its consequences explicitly:
+#
+#   weight               how much it contributes to the Model Behaviour score
+#   hidden_groups.alpha / min_effect
+#                        significance (false discovery rate) and the smallest
+#                        excess error rate that counts, default.yaml
+#   hidden_groups.consequence
+#       score_only       only the score is affected; never forces a decision
+#       hold             a confirmed group (WARN or FAIL) blocks PROMOTE -> HOLD   <- this profile
+#       critical         as hold, and a FAIL forces a ROLLBACK recommendation
+#   hidden_groups.require_assessment
+#                        true: UNAVAILABLE / ERROR also blocks PROMOTE
+#
+# Two ready-made variants extend this file: hidden_groups_score_only.yaml and
+# hidden_groups_critical.yaml. See docs/hidden_groups.md. Thresholds are placeholders.
+extends: default.yaml
+
+profile: hidden_groups
+description: Default profile with Hidden Failure Group Detection; a confirmed group puts the model on HOLD.
+
+checks:
+  behaviour.hidden_failure_groups:
+    enabled: true
+    weight: 1.5
+    thresholds: {target: 0.0, pass_at: 0.0, fail_at: 0.25, floor: 0.50}
+
+hidden_groups:
+  consequence: hold
+  require_assessment: true

@@ -1,0 +1,13 @@
+# Hidden Failure Group Detection with a critical-rule policy.
+#
+# A confirmed group blocks PROMOTE (HOLD). A severe one, whose excess error rate is
+# above the check's fail_at (0.25 here), is a critical failure and the recommendation
+# is ROLLBACK regardless of the MQS. Opt in only if that is what you intend:
+# detecting a subgroup is an association, and the default never forces a ROLLBACK.
+extends: hidden_groups.yaml
+
+profile: hidden_groups_critical
+description: A severe hidden failure group is a critical failure (ROLLBACK recommendation).
+
+hidden_groups:
+  consequence: critical

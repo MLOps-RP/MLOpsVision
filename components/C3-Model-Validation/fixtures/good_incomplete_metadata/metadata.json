@@ -1,0 +1,61 @@
+{
+  "fixture_name": "good_incomplete_metadata",
+  "dataset": "UCI Adult Income",
+  "task_type": "binary_classification",
+  "target_column": "target",
+  "positive_label": ">50K",
+  "sensitive_columns": [
+    "sex",
+    "race"
+  ],
+  "excluded_sensitive_features": [
+    "sex",
+    "race"
+  ],
+  "feature_columns": [
+    "age",
+    "workclass",
+    "fnlwgt",
+    "education",
+    "education-num",
+    "marital-status",
+    "occupation",
+    "relationship",
+    "capital-gain",
+    "capital-loss",
+    "hours-per-week",
+    "native-country"
+  ],
+  "train_rows": 29305,
+  "eval_rows": 9768,
+  "model_type": "LogisticRegression",
+  "train_eval_exact_row_overlap": {
+    "rows": 12,
+    "fraction_of_eval": 0.0012285012285012285,
+    "note": "Adult contains naturally duplicated records."
+  },
+  "evaluation_metrics": {
+    "accuracy": 0.8538083538083538,
+    "precision": 0.742141715503463,
+    "recall": 0.5960633290543432,
+    "f1": 0.6611295681063123,
+    "roc_auc": 0.9061014737381082
+  },
+  "fairness": {
+    "demographic_parity_difference_by_sex": 0.17148760838700464,
+    "selection_rate_by_sex": {
+      "Female": 0.07751698579369981,
+      "Male": 0.24900459418070445
+    },
+    "selection_rate_ratio_by_sex": 0.3113074521727305,
+    "demographic_parity_difference_by_race": 0.15533528948686753,
+    "selection_rate_by_race": {
+      "Amer-Indian-Eskimo": 0.0898876404494382,
+      "Asian-Pac-Islander": 0.24522292993630573,
+      "Black": 0.10482180293501048,
+      "Other": 0.11235955056179775,
+      "White": 0.20211487623167507
+    },
+    "selection_rate_ratio_by_race": 0.36655479352108566
+  }
+}

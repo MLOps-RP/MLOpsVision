@@ -1,0 +1,15 @@
+{
+  "pattern": null,
+  "mode": "misspec",
+  "strength": 0.8,
+  "description": "no planted region",
+  "region_rule": null,
+  "rule_keywords": [],
+  "region_share": 0.0,
+  "planted_row_indices": [],
+  "measured": {
+    "overall_error_rate": 0.2876666666666667,
+    "error_rate_inside": null,
+    "error_rate_outside": 0.2876666666666667
+  }
+}

@@ -1,0 +1,53 @@
+# Ground truth for the Hidden Failure Group Detection fixtures.
+#
+# Kept separate from fixtures/manifest.yaml so the original scenario suite is
+# unchanged. Paths are relative to components/C3-Model-Validation/. Create the
+# fixtures with scripts/make_hidden_group_fixtures.py.
+#
+# expected_decision is given for four profiles:
+#   default                   configs/default.yaml                   (the check is off)
+#   hidden_groups_score_only  configs/hidden_groups_score_only.yaml (on; affects the score only)
+#   hidden_groups             configs/hidden_groups.yaml            (on; a confirmed group -> HOLD)
+#   hidden_groups_critical    configs/hidden_groups_critical.yaml   (on; a severe group -> ROLLBACK)
+#
+# The first fixture is the motivating gap: every existing check passes, so the
+# default profile promotes a model that fails on about 9% of its inputs.
+
+fixtures:
+  hidden_group:
+    model: fixtures/hidden_group/model.joblib
+    metadata: fixtures/hidden_group/metadata.json
+    eval_data: fixtures/hidden_group/eval.csv
+    train_row_hashes: fixtures/hidden_group/train_row_hashes.txt
+    ground_truth: fixtures/hidden_group/ground_truth.json
+    injected_defect: >
+      Labels are flipped with probability 0.8 where segment = d AND
+      tenure_years > 6 (about 9% of rows), in training and evaluation data.
+      A logistic regression cannot represent the interaction, so it fails
+      there (about 61% error inside, 28% outside). No sensitive column
+      describes the group.
+    expected_decision:
+      default: PROMOTE
+      hidden_groups_score_only: PROMOTE
+      hidden_groups: HOLD
+      hidden_groups_critical: ROLLBACK
+    expected_findings: [behaviour.hidden_failure_groups]
+    notes: >
+      A confirmed group is reported as a rule that mentions segment = d.
+      Planted-row coverage by the confirmed groups was 64% when the fixture
+      was built.
+
+  hidden_group_null:
+    model: fixtures/hidden_group_null/model.joblib
+    metadata: fixtures/hidden_group_null/metadata.json
+    eval_data: fixtures/hidden_group_null/eval.csv
+    train_row_hashes: fixtures/hidden_group_null/train_row_hashes.txt
+    ground_truth: fixtures/hidden_group_null/ground_truth.json
+    injected_defect: none (same data process, no planted region)
+    expected_decision:
+      default: PROMOTE
+      hidden_groups_score_only: PROMOTE
+      hidden_groups: PROMOTE
+      hidden_groups_critical: PROMOTE
+    expected_findings: []
+    notes: Control for false alarms; the check must PASS.
