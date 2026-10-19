@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------
+# Remediation policy: (diagnosis, severity) -> action
+# Rules are checked from top to bottom; the FIRST match wins.
+# "any" matches everything.
+# ---------------------------------------------------------------
+rules:
+  - diagnosis: [DATA_QUALITY]        # broken data is never "fixed" by retraining or rollback
+    severity: any
+    action: BLOCK_AND_FLAG
+    target: data-pipeline-owner
+
+  - diagnosis: any
+    severity: [Critical]
+    action: ROLLBACK
+    target: C4
+
+  - diagnosis: [COVARIATE_BENIGN]
+    severity: any
+    action: WARN_ONLY
+    target: dashboard
+
+  - diagnosis: [SUSPECTED]
+    severity: any
+    action: WATCH
+    target: dashboard
+
+  - diagnosis: [COVARIATE_DEGRADING]
+    severity: [Medium, High]
+    action: ROUTE_C1
+    target: C1
+
+  - diagnosis: [CONCEPT_DRIFT, LABEL_SHIFT]
+    severity: [Medium, High]
+    action: ROUTE_C2
+    target: C2
+
+  - diagnosis: any
+    severity: [Low]
+    action: WARN_ONLY
+    target: dashboard
+
+  - diagnosis: [NO_DRIFT]
+    severity: any
+    action: NONE
+    target: none
+
+# Actions that cost money / change the system. After one of these,
+# C4 waits this many windows before taking another (except escalation to ROLLBACK).
+significant_actions: [ROUTE_C1, ROUTE_C2, ROLLBACK, BLOCK_AND_FLAG]
+cooldown_windows: 8

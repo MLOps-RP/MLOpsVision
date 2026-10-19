@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------
+# C4 monitoring settings
+# Change numbers here, not in the code.
+# ---------------------------------------------------------------
+
+# How production data is cut into time steps
+window_size: 500          # rows per window (one "time step" of production)
+label_delay: 3            # true labels for window w arrive when window w+3 arrives
+performance_windows: 2    # performance is measured over the last 2 labelled windows
+
+# Which columns are features
+numeric_features: [age, education-num, capital-gain, capital-loss, hours-per-week]
+categorical_features: [workclass, education, marital-status, occupation,
+                       relationship, race, sex, native-country]
+
+# Distribution tests
+psi_bins: 10              # decile bins taken from the baseline
+confidence_bins: 10       # histogram bins for the model's confidence
+
+# ---------------- Adaptive (calibrated) thresholds ----------------
+# threshold = mean + k * std of the score on clean (no-drift) windows,
+# but never lower than the floor below.
+calibration:
+  k: 3.0
+  n_clean_windows: 60     # resampled clean windows drawn from the test split
+  floors:
+    psi: 0.05             # numeric features
+    jsd: 0.03             # categorical features
+    prediction_share: 0.03
+    confidence_mean: 0.02
+    confidence_jsd: 0.03
+    perf_drop: 0.04
+    label_share: 0.05
+    tpr_delta: 0.08
+    tnr_delta: 0.04
+
+# ---------------- Data-quality rules (fixed, not calibrated) -------
+data_quality:
+  max_null_increase: 0.05       # null rate may rise at most 5 percentage points
+  max_out_of_range_share: 0.02  # at most 2% of values outside baseline min/max
+  max_unseen_category_share: 0.05
+
+# ---------------- ADWIN (river) ----------------
+adwin_delta: 0.002
+adwin_recent_windows: 3   # an ADWIN alarm counts as "recent" for 3 windows

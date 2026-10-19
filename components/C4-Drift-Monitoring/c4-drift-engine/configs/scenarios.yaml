@@ -1,0 +1,68 @@
+# ---------------------------------------------------------------
+# Drift scenarios for the production stream simulator.
+# Windows 0..14 are always clean. Drift starts at window 15.
+# ---------------------------------------------------------------
+seed: 42
+drift_start: 15
+
+scenarios:
+  S0_no_drift:
+    type: none
+    description: Production data behaves like training data.
+    expected_diagnosis: NO_DRIFT
+    expected_action: NONE
+
+  S1_covariate_benign:
+    type: covariate_categorical
+    description: The population mix changes in a feature the model hardly uses (race).
+    feature: race
+    share: 0.6
+    new_values: [Black, Asian-Pac-Islander, Amer-Indian-Eskimo]
+    ramp_windows: 0
+    expected_diagnosis: COVARIATE_BENIGN
+    expected_action: WARN_ONLY
+
+  S2_covariate_degrading:
+    type: covariate_numeric
+    description: Important inputs shift (age, education-num, hours) and the model's mapping no longer fits.
+    share: 0.8
+    shifts: {age: 12, education-num: 3, hours-per-week: 10}
+    ramp_windows: 0
+    expected_diagnosis: COVARIATE_DEGRADING
+    expected_action: ROUTE_C1
+
+  S3_concept:
+    type: concept
+    description: Inputs look the same but the income rule changes for married people.
+    segment: {marital-status: Married-civ-spouse}
+    flip_prob: 0.4
+    ramp_windows: 4
+    expected_diagnosis: CONCEPT_DRIFT
+    expected_action: ROUTE_C2
+
+  S4_label_shift:
+    type: label_shift
+    description: The share of high earners jumps from about 24% to 50%.
+    target_positive_share: 0.5
+    ramp_windows: 0
+    expected_diagnosis: LABEL_SHIFT
+    expected_action: ROUTE_C2
+
+  S5_data_quality:
+    type: data_quality
+    description: An upstream bug - 40% of hours-per-week are missing and the rest arrive in minutes (x60).
+    feature: hours-per-week
+    null_share: 0.4
+    multiply: 60
+    ramp_windows: 0
+    expected_diagnosis: DATA_QUALITY
+    expected_action: BLOCK_AND_FLAG
+
+  S6_sudden_drop:
+    type: concept
+    description: A sudden, severe change - the label rule breaks for everyone.
+    segment: all
+    flip_prob: 0.6
+    ramp_windows: 0
+    expected_diagnosis: CONCEPT_DRIFT
+    expected_action: ROLLBACK

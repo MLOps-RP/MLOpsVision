@@ -1,0 +1,17 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# MLflow store (re-created by train_and_register)
+mlflow.db
+mlruns/
+
+# Generated data and outputs (re-created by the scripts)
+data/raw/*
+data/processed/*
+data/scenarios/*
+artifacts/*
+outputs/*
+!**/.gitkeep
