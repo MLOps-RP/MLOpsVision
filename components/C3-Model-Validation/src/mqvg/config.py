@@ -140,6 +140,53 @@ class EvaluationConfig(_Strict):
     # many (randomly sampled, seeded) evaluation rows.
     leakage_max_rows: int = Field(default=20000, ge=100)
     leakage_cv_folds: int = Field(default=5, ge=2)
+    # CPU time check: predict the evaluation sample repeatedly until at least this
+    # much wall time has passed (the OS clock is coarse), at most this many rounds.
+    cpu_min_seconds: float = Field(default=0.3, gt=0)
+    cpu_max_rounds: int = Field(default=200, ge=1)
+    cpu_sample_rows: int = Field(default=1000, ge=1)
+
+
+# Model-file safety scan (used only when operational.model_file_safety is enabled).
+# These are heuristics for a static scan; they are NOT a sandbox. See docs/extended_checks.md.
+DEFAULT_ALLOWED_MODULES = [
+    "sklearn", "numpy", "scipy", "pandas", "joblib", "xgboost", "lightgbm",
+    "collections", "copyreg", "_codecs", "datetime", "decimal", "fractions",
+]
+DEFAULT_ALLOWED_BUILTINS = [
+    "list", "dict", "set", "frozenset", "tuple", "object", "int", "float", "str",
+    "bool", "bytes", "bytearray", "complex", "slice", "range",
+]
+DEFAULT_BLOCKED_MODULES = [
+    "os", "posix", "nt", "subprocess", "socket", "shutil", "sys", "ctypes", "importlib",
+    "runpy", "pty", "marshal", "pickle", "_pickle", "webbrowser", "http", "urllib",
+    "ftplib", "smtplib", "multiprocessing", "threading", "asyncio", "signal", "code",
+    "codeop", "commands", "popen2", "platform", "tempfile", "glob",
+    "numpy.f2py", "numpy.distutils", "numpy.testing", "pandas.io", "pandas.read_pickle",
+    "sklearn.datasets", "sklearn.externals",
+]
+DEFAULT_BLOCKED_GLOBALS = [
+    "joblib.load", "joblib.numpy_pickle.load", "numpy.load", "numpy.fromfile",
+    "numpy.memmap", "numpy.lib.npyio.load",
+]
+DEFAULT_BLOCKED_BUILTINS = [
+    "eval", "exec", "compile", "__import__", "open", "getattr", "setattr", "delattr",
+    "globals", "locals", "vars", "input", "breakpoint",
+]
+
+
+class ModelSafetyConfig(_Strict):
+    """What the static scan of a model file treats as dangerous or unrecognised."""
+    # Loading is refused (the file is never unpickled for real) when the scan finds
+    # at least this level: "dangerous" = a blocked reference; "unrecognised" = any
+    # reference outside the allowlist as well; "never" = report only (the model is
+    # then loaded, and loading executes the code the scan reported).
+    refuse_at: Literal["dangerous", "unrecognised", "never"] = "unrecognised"
+    allowed_module_prefixes: list[str] = Field(default_factory=lambda: list(DEFAULT_ALLOWED_MODULES))
+    allowed_builtins: list[str] = Field(default_factory=lambda: list(DEFAULT_ALLOWED_BUILTINS))
+    blocked_module_prefixes: list[str] = Field(default_factory=lambda: list(DEFAULT_BLOCKED_MODULES))
+    blocked_globals: list[str] = Field(default_factory=lambda: list(DEFAULT_BLOCKED_GLOBALS))
+    blocked_builtins: list[str] = Field(default_factory=lambda: list(DEFAULT_BLOCKED_BUILTINS))
 
 
 class HiddenGroupsConfig(_Strict):
@@ -235,6 +282,7 @@ class GateConfig(_Strict):
     critical_rules: list[CriticalRule] = Field(default_factory=list)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
     hidden_groups: HiddenGroupsConfig = Field(default_factory=HiddenGroupsConfig)
+    model_safety: ModelSafetyConfig = Field(default_factory=ModelSafetyConfig)
     metadata: MetadataConfig
     checks: dict[str, CheckConfig]
 

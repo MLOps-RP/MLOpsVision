@@ -67,6 +67,7 @@ validate models from trusted sources.
 |---|---|
 | `default.yaml` | Balanced prototype profile; hidden-group check off |
 | `strict.yaml` | Tighter thresholds, missing evidence penalised |
+| `extended.yaml` | Default plus conflicting labels, training duplicates, model-file safety scan and CPU time |
 | `hidden_groups_score_only.yaml` | Hidden-group check on; affects the score only |
 | `hidden_groups.yaml` | Check on; a confirmed group gives HOLD |
 | `hidden_groups_critical.yaml` | Check on; a severe group gives a ROLLBACK recommendation |
@@ -78,7 +79,8 @@ Every threshold, weight and band is an **initial placeholder**, not a standard
 
 `good`, `leaky`, `overfit`, `biased`, `miscalibrated`, `slow`, `corrupt`,
 `good_incomplete_metadata`, `good_no_sensitive`, plus `hidden_group` (a planted
-failing subgroup) and `hidden_group_null` (a control). Expected outcomes are in
+failing subgroup) and `hidden_group_null` (a control); `scripts/make_extended_fixtures.py` adds
+`label_conflicts`, `duplicate_training`, `unsafe_model` (deliberately unsafe) and `unreviewed_model`. Expected outcomes are in
 `fixtures/manifest.yaml` and `fixtures/hidden_groups_manifest.yaml`.
 
 ## Tests and studies
@@ -87,6 +89,8 @@ failing subgroup) and `hidden_group_null` (a control). Expected outcomes are in
 python -m pytest -q                                   # full suite
 python scripts\evaluate_hidden_groups.py --quick      # detection-power study (synthetic)
 python scripts\sensitivity_analysis.py                # decision stability; writes docs\sensitivity_analysis.md
+python scripts\baseline_comparison.py                 # plain metrics gate vs full gate; writes docs\baseline_comparison.md
+python scriptsaseline_comparison.py                # plain metrics gate vs full gate; writes docsaseline_comparison.md
 ```
 
 The full suite takes several minutes. Latency and memory are wall-clock
@@ -100,14 +104,16 @@ measurements, so they vary slightly between runs and machines.
 | `configs/` | validation profiles |
 | `fixtures/`, `data/` | sample models and evaluation data |
 | `scripts/` | demonstration and study helpers (not part of the gate) |
-| `docs/` | `workflow.md`, `scoring.md`, `reporting.md`, `hidden_groups.md`, `supported_models.md`, `assumptions.md`, `sensitivity_analysis.md`, `sample_reports/` |
+| `docs/` | `workflow.md`, `scoring.md`, `reporting.md`, `hidden_groups.md`, `supported_models.md`, `assumptions.md`, `sensitivity_analysis.md`, `baseline_comparison.md`, `extended_checks.md`, `sample_reports/` |
 
 ## Current limits
 
 - Tested on scikit-learn style binary classifiers saved with joblib/pickle.
 - Thresholds and weights are not calibrated on real-world model collections.
 - Explanations are rule-based, not SHAP/LIME.
-- Not implemented: conflicting-label and training-set duplicate checks, a model-file
-  security scan, CPU usage, a rollback-capability check, and an HTTP API.
+- Not implemented: a rollback-capability check, conflicting labels in the training data,
+  sandboxed model loading, and an HTTP API. The extended profile adds a static model-file
+  scan (not a sandbox), conflicting labels in the evaluation data, training duplicates from
+  the row hashes, and CPU time (`docs/extended_checks.md`).
 - Hidden-group findings are statistical associations, not causes, and the
   features describing a group can be proxies for sensitive characteristics.

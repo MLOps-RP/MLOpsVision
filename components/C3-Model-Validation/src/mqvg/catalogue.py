@@ -42,6 +42,12 @@ CATALOGUE: tuple[CheckSpec, ...] = (
               "fraction of eval rows", "Eval rows that also appear in training data (needs row hashes)"),
     CheckSpec("leakage.single_feature_predictiveness", TV, "lower_is_better",
               "ROC AUC", "Highest ROC AUC reached by any single feature on eval data"),
+    CheckSpec("training_validity.eval_label_conflicts", TV, "lower_is_better",
+              "fraction of eval rows",
+              "Evaluation rows whose features are identical to another row's but whose label differs"),
+    CheckSpec("training_validity.train_duplicate_rows", TV, "lower_is_better",
+              "fraction of training rows",
+              "Training rows that duplicate another training row (from the supplied row hashes)"),
     # --- Model behaviour --------------------------------------------------
     CheckSpec("behaviour.f1", MB, "higher_is_better", "score", "F1 on the evaluation data"),
     CheckSpec("behaviour.roc_auc", MB, "higher_is_better", "score", "ROC AUC on the evaluation data"),
@@ -72,6 +78,12 @@ CATALOGUE: tuple[CheckSpec, ...] = (
     CheckSpec("operational.memory", OR, "lower_is_better", "MB", "Memory increase when loading and predicting"),
     CheckSpec("operational.dependency_match", OR, "higher_is_better",
               "fraction", "Share of declared library versions matching the current environment"),
+    CheckSpec("operational.model_file_safety", OR, "lower_is_better",
+              "severity 0-2",
+              "Static scan of the model file for code references that loading would execute "
+              "(0 only recognised libraries, 1 unrecognised code, 2 dangerous code)"),
+    CheckSpec("operational.cpu_time", OR, "lower_is_better", "ms CPU per row",
+              "CPU time the process spends predicting one row, from a batch of evaluation rows"),
 )
 
 CHECKS_BY_ID: dict[str, CheckSpec] = {spec.id: spec for spec in CATALOGUE}

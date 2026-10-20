@@ -1,0 +1,67 @@
+# Ground truth for the extended-check fixtures (scripts/make_extended_fixtures.py).
+#
+# Kept separate from fixtures/manifest.yaml so the original scenario suite is
+# unchanged. Paths are relative to components/C3-Model-Validation/.
+#
+# expected_decision is given for two profiles:
+#   default   configs/default.yaml   (the four extended checks are off)
+#   extended  configs/extended.yaml  (on)
+# A model, evaluation file or hash file that a fixture does not provide itself is
+# taken from the good fixture and data/.
+#
+# unsafe_model is DELIBERATELY UNSAFE: loading it with the default profile runs its
+# payload (it prints one line). The default decision was observed once by hand and
+# is not re-run by the test suite.
+
+fixtures:
+  label_conflicts:
+    model: fixtures/good/model.joblib
+    metadata: fixtures/label_conflicts/metadata.json
+    eval_data: fixtures/label_conflicts/eval.csv
+    train_row_hashes: data/train_row_hashes.txt
+    injected_defect: >
+      3% of the evaluation rows are repeated with the opposite label, so identical
+      features carry both labels (about 5.8% of rows are in a conflicting group).
+    expected_decision:
+      default: PROMOTE      # the blind spot: metrics shift but nothing flags the labels
+      extended: HOLD
+    expected_findings: [training_validity.eval_label_conflicts]
+
+  duplicate_training:
+    model: fixtures/good/model.joblib
+    metadata: fixtures/duplicate_training/metadata.json
+    eval_data: data/eval.csv
+    train_row_hashes: fixtures/duplicate_training/train_row_hashes.txt
+    injected_defect: >
+      15% of the training row hashes are repeated (about 13% of the hashes are
+      duplicates).
+    expected_decision:
+      default: PROMOTE
+      extended: PROMOTE     # the check FAILs but only lowers the score; duplicates are an upstream data issue
+    expected_findings: [training_validity.train_duplicate_rows]
+
+  unsafe_model:
+    model: fixtures/unsafe_model/model.joblib
+    metadata: fixtures/unsafe_model/metadata.json
+    eval_data: data/eval.csv
+    train_row_hashes: data/train_row_hashes.txt
+    injected_defect: >
+      The pickle calls os.write(1, b"PAYLOAD EXECUTED...") when loaded (harmless, but
+      real code execution).
+    expected_decision:
+      default: ROLLBACK     # observed once by hand: the payload ran, then the object had no predict method
+      extended: ROLLBACK    # never loaded; the payload did not run
+    expected_findings: [operational.model_file_safety, operational.model_loadable]
+
+  unreviewed_model:
+    model: fixtures/unreviewed_model/model.joblib
+    metadata: fixtures/unreviewed_model/metadata.json
+    eval_data: data/eval.csv
+    train_row_hashes: data/train_row_hashes.txt
+    injected_defect: >
+      The pickle refers to __main__.UnreviewedModel, code the allowlist does not
+      recognise.
+    expected_decision:
+      default: HOLD         # cannot be loaded here (the class does not exist), so evidence is missing
+      extended: HOLD        # not loaded; a person must review the code
+    expected_findings: [operational.model_file_safety]

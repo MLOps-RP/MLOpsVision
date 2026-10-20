@@ -219,6 +219,75 @@ def train_eval_overlap(ctx: CheckContext) -> CheckResult:
                  "hash_file": str(path), "hashed_columns": columns})
 
 
+@_register("training_validity.train_duplicate_rows")
+def train_duplicate_rows(ctx: CheckContext) -> CheckResult:
+    check_id = "training_validity.train_duplicate_rows"
+    path, problem = _hash_file(ctx.candidate)
+    if path is None:
+        return unavailable_result(ctx, check_id, problem)
+    hashes = [line.strip() for line in
+              path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not hashes:
+        return unavailable_result(ctx, check_id, f"The row-hash file {path} is empty.")
+    duplicates = len(hashes) - len(set(hashes))
+    fraction = duplicates / len(hashes)
+    return scored_result(
+        ctx, check_id, fraction,
+        f"{duplicates} of {len(hashes)} training rows ({fraction:.2%}) duplicate another "
+        "training row. Duplicates can make a model look better on rows it has memorised "
+        "and are often a data-quality problem upstream. The hashes are producer-supplied "
+        "and cover the feature columns only, so rows with the same features and "
+        "different labels also count as duplicates.",
+        evidence=EvidenceSource.DECLARED,
+        details={"duplicate_rows": duplicates, "training_rows": len(hashes),
+                 "distinct_rows": len(set(hashes)), "hash_file": str(path),
+                 "caveat": "The gate does not see the training data, only its row hashes."})
+
+
+@_register("training_validity.eval_label_conflicts")
+def eval_label_conflicts(ctx: CheckContext) -> CheckResult:
+    check_id = "training_validity.eval_label_conflicts"
+    c = ctx.candidate
+    if c.eval_df is None:
+        return unavailable_result(
+            ctx, check_id, f"Evaluation data unavailable ({c.eval_error}).")
+    target, features = c.target_column, c.feature_columns
+    if target is None or target not in c.eval_df.columns:
+        return unavailable_result(
+            ctx, check_id, "The target column is unknown or missing from the evaluation data.")
+    if not features:
+        return unavailable_result(
+            ctx, check_id,
+            "The model's feature columns are unknown (no loaded model, none in the metadata).")
+    missing = [col for col in features if col not in c.eval_df.columns]
+    if missing:
+        return unavailable_result(
+            ctx, check_id, f"The evaluation data lacks feature columns {missing}.")
+
+    frame = c.eval_df.dropna(subset=[target])
+    if frame.empty:
+        return unavailable_result(ctx, check_id, "No evaluation row has a label.")
+    groups = frame.groupby(features, dropna=False)[target].agg(["size", "nunique"])
+    repeated = groups[groups["size"] > 1]
+    conflicting = repeated[repeated["nunique"] > 1]
+    conflict_rows = int(conflicting["size"].sum())
+    fraction = conflict_rows / len(frame)
+    return scored_result(
+        ctx, check_id, fraction,
+        f"{conflict_rows} of {len(frame)} evaluation rows ({fraction:.2%}) share their "
+        f"feature values with a row that has a different label ({len(conflicting)} "
+        f"conflicting groups among {len(repeated)} groups of repeated feature values). "
+        "Conflicting labels put a ceiling on the accuracy any model can reach and make "
+        "the measured metrics unreliable.",
+        details={"conflict_rows": conflict_rows, "conflicting_groups": int(len(conflicting)),
+                 "repeated_groups": int(len(repeated)),
+                 "rows_in_repeated_groups": int(repeated["size"].sum()),
+                 "eval_rows": int(len(frame)), "feature_columns": list(features),
+                 "caveat": "Only exact repeats of the feature values are found, so data "
+                           "with continuous features has little power; the gate cannot "
+                           "check the training labels, which it does not receive."})
+
+
 # --------------------------------------------------------------------------
 # Leakage probe
 # --------------------------------------------------------------------------

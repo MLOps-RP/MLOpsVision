@@ -22,6 +22,7 @@ from mqvg.checks.base import (
 from mqvg.config import GateConfig
 from mqvg.environment import current_versions, machine_profile
 from mqvg.loader import BYTES_PER_MB, CANNOT_ASSESS, LoadedCandidate
+from mqvg.model_safety import MAX_REFS_REPORTED
 from mqvg.schemas import CheckResult, Dimension, EvidenceSource
 
 SAMPLE_ROWS = 1000
@@ -261,6 +262,80 @@ def dependency_match(ctx: CheckContext) -> CheckResult:
     return scored_result(ctx, check_id, fraction, message,
                          evidence=EvidenceSource.DECLARED,
                          details={"comparisons": comparisons})
+
+
+@_register("operational.model_file_safety")
+def model_file_safety(ctx: CheckContext) -> CheckResult:
+    check_id = "operational.model_file_safety"
+    c = ctx.candidate
+    report = c.safety_scan
+    if report is None:
+        if c.safety_error:
+            return unavailable_result(
+                ctx, check_id,
+                f"The model file could not be scanned: {c.safety_error}. It is not counted "
+                "as safe.", details={"error": c.safety_error})
+        return unavailable_result(
+            ctx, check_id,
+            "The model file was not scanned (" + (c.model_error or "the scan did not run")
+            + "). It is not counted as safe.")
+    shown = ", ".join((report.dangerous or report.unrecognised)[:5])
+    if report.severity == 0:
+        message = (f"The scan found {len(report.references)} code references in the model "
+                   "file, all on the allowlist.")
+    elif report.dangerous:
+        message = ("The model file references dangerous code that loading would run: "
+                   f"{shown}.")
+    else:
+        message = ("The model file references code the allowlist does not recognise: "
+                   f"{shown}. A person should review it.")
+    message += (" This is a static scan, not a sandbox: it does not prove the file is safe, "
+                "and only trusted files should be validated.")
+    return scored_result(
+        ctx, check_id, float(report.severity), message,
+        details={"verdict": report.verdict, "dangerous": report.dangerous,
+                 "unrecognised": report.unrecognised,
+                 "references": report.references[:MAX_REFS_REPORTED],
+                 "reference_count": len(report.references),
+                 "loaded": c.model is not None, "refuse_at": ctx.config.model_safety.refuse_at,
+                 "file_bytes": report.file_bytes})
+
+
+@_register("operational.cpu_time")
+def cpu_time(ctx: CheckContext) -> CheckResult:
+    check_id = "operational.cpu_time"
+    reason = prediction_blocker(ctx.candidate)
+    if reason:
+        return unavailable_result(ctx, check_id, "Cannot test: " + reason)
+    evaluation = ctx.config.evaluation
+    rows = ctx.candidate.eval_df[ctx.candidate.feature_columns].head(evaluation.cpu_sample_rows)
+    model = ctx.candidate.model
+    model.predict(rows)                       # warm-up: imports, lazy initialisation
+
+    # The OS reports process CPU time in coarse steps, so predict repeatedly until
+    # enough time has passed for the figure to be meaningful.
+    cpu_start, wall_start = time.process_time(), time.perf_counter()
+    rounds = 0
+    while rounds < evaluation.cpu_max_rounds:
+        model.predict(rows)
+        rounds += 1
+        if time.perf_counter() - wall_start >= evaluation.cpu_min_seconds:
+            break
+    cpu = time.process_time() - cpu_start
+    wall = time.perf_counter() - wall_start
+    predicted = rounds * len(rows)
+    ms_per_row = cpu / predicted * 1000.0
+    return scored_result(
+        ctx, check_id, ms_per_row,
+        f"Predicting {predicted} rows used {cpu:.2f} s of process CPU time over "
+        f"{wall:.2f} s of wall time: {ms_per_row:.3f} ms of CPU per row "
+        f"(CPU/wall ratio {cpu / wall:.2f}; above 1 means several cores were busy).",
+        details={"cpu_seconds": cpu, "wall_seconds": wall, "rows_predicted": predicted,
+                 "rounds": rounds, "rows_per_round": len(rows),
+                 "cpu_to_wall_ratio": cpu / wall if wall else None,
+                 "machine": machine_profile(),
+                 "note": "Batch prediction, so it differs from the single-row latency "
+                         "check; depends on the machine and on other load."})
 
 
 # --------------------------------------------------------------------------

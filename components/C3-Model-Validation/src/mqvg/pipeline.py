@@ -98,7 +98,9 @@ def run_validation(bundle: CandidateBundle, config: GateConfig | None = None, *,
     timings: dict[str, float] = {}
 
     started = time.perf_counter()
-    candidate = load_candidate(bundle)
+    safety = (config.model_safety
+              if config.checks["operational.model_file_safety"].enabled else None)
+    candidate = load_candidate(bundle, safety)
     timings["load"] = time.perf_counter() - started
 
     checks: list[CheckResult] = []

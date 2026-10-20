@@ -332,3 +332,28 @@ Full description, evaluation and limitations: `docs/hidden_groups.md`; results:
   gradient-boosting models was 7.5% (6 of 80) against the nominal 5%; BH under
   dependent tests is plausible but not proven; real-data validation (beyond one
   observation on the Adult `biased` fixture) is missing.
+
+## Extended checks (separate profile)
+
+Full description: `docs/extended_checks.md`. Decisions made while building them:
+
+- **Off by default.** Four more checks would change every model's TVS, ORS and MQS and break
+  the hand-computed scoring tests, so `default.yaml` lists them disabled and
+  `configs/extended.yaml` enables them. **OPEN:** whether any belongs in the default profile.
+- **The safety scan runs before loading, and an unparseable file is not loaded.** A scan that
+  ran after loading would be useless, and a file the scanner rejects but joblib accepts is the
+  case an attacker wants. A corrupt file therefore still gives the load failure and ROLLBACK it
+  gave before; a file the scanner cannot handle goes to review (UNAVAILABLE, HOLD).
+- **`refuse_at` defaults to `unrecognised`** in the extended profile: any code outside the
+  allowlist is not loaded until a person adds its module to `allowed_module_prefixes`.
+  **OPEN:** the allow and block lists are heuristics and need review before real use.
+- **Conflicting labels are evaluation-only.** The gate receives no training labels. The sample
+  data has no repeated feature rows, so the check cannot show a non-zero natural value; the
+  planted fixture is the only evidence it detects anything. **OPEN:** a near-duplicate
+  (tolerance) match for continuous features.
+- **Training duplicates only lower the score** (they are an upstream data-quality matter),
+  while label conflicts and unrecognised code are must-pass.
+- **CPU time on Windows:** the process-CPU clock ticks in about 15.6 ms steps, which is why
+  the check predicts for at least 0.3 s. A test that spun on that clock measured the burn
+  itself in quantised steps; the tests now spin on the wall clock.
+- Placeholder thresholds were not tuned to make a fixture warn.
