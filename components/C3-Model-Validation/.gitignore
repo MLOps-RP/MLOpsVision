@@ -17,3 +17,6 @@ reports/
 
 # Hidden-group fixtures: large or regenerable files
 fixtures/**/train_row_hashes.txt
+
+# API run output
+mqvg_api_reports/

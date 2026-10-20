@@ -1,0 +1,16 @@
+# The extended profile (model-file safety scan, label conflicts, training duplicates, CPU time)
+# plus Hidden Failure Group Detection with the `hold` policy. This is the profile to use through
+# the API when you want subgroup detection, because it scans the model file before loading it
+# (configs/hidden_groups.yaml does not).
+extends: extended.yaml
+
+profile: extended_hidden_groups
+description: Extended checks plus hidden failure group detection (a confirmed group gives HOLD).
+
+hidden_groups:
+  consequence: hold
+  require_assessment: true
+
+checks:
+  behaviour.hidden_failure_groups:
+    enabled: true

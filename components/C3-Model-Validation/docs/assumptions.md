@@ -357,3 +357,23 @@ Full description: `docs/extended_checks.md`. Decisions made while building them:
   the check predicts for at least 0.3 s. A test that spun on that clock measured the burn
   itself in quantised steps; the tests now spin on the wall clock.
 - Placeholder thresholds were not tuned to make a fixture warn.
+
+## HTTP API
+
+Full description: `docs/api.md`. Decisions made while building it:
+
+- **A path-loading endpoint is a code-execution surface**, so the API is restrictive by default
+  rather than convenient: paths confined to one artifact root (symlinks and junctions that
+  escape are rejected), profiles chosen by name, only profiles that scan the model file before
+  loading it, API key required (fail closed), loopback binding unless a key is set.
+  **OPEN:** this limits risk; it does not make validating untrusted models safe.
+- **Missing files are request errors (422), unlike the library**, where a missing artifact is a
+  finding. In a request/response setting a typo in a path should not look like a verdict.
+- **Synchronous, one at a time.** Latency and CPU are timings, so validations are serialised.
+  **OPEN:** an asynchronous job interface for long validations.
+- **A subgroup-detecting profile that scans files was added** (`extended_hidden_groups`), because
+  `hidden_groups` does not scan and so cannot be served by default.
+- **No new validation logic**: the API calls `validate_and_report`; a test checks it gives the
+  same decision and rules as a direct call.
+- **Contract:** `docs/api_openapi.json` is generated and checked by a test. Stability within `/v1`
+  is an intention, not yet exercised by a real client.

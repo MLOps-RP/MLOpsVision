@@ -61,6 +61,19 @@ print(out.decision, out.result.scorecard.mqs)
 **Security:** loading a joblib/pickle file executes code stored in it. Only
 validate models from trusted sources.
 
+### HTTP API
+
+```
+$env:MQVG_ARTIFACT_ROOT = "C:\path	ortifacts"; $env:MQVG_API_KEY = "change-me"
+python -m mqvg.api                                    # http://127.0.0.1:8000/docs
+```
+
+A thin wrapper around `validate_and_report`: `POST /v1/validations` returns the recommendation,
+`GET /v1/validations/{run_id}` the full result, `.../report` the Markdown report. It is
+recommendation-only, confines paths to one artifact root, runs only profiles that scan the model
+file, and needs an API key. Read `docs/api.md` (security model, settings, limits) before exposing
+it; the contract is `docs/api_openapi.json`.
+
 ## Profiles (`configs/`)
 
 | File | Purpose |
@@ -68,6 +81,7 @@ validate models from trusted sources.
 | `default.yaml` | Balanced prototype profile; hidden-group check off |
 | `strict.yaml` | Tighter thresholds, missing evidence penalised |
 | `extended.yaml` | Default plus conflicting labels, training duplicates, model-file safety scan and CPU time |
+| `extended_hidden_groups.yaml` | Extended plus hidden failure group detection (the profile to use through the API for subgroup detection) |
 | `hidden_groups_score_only.yaml` | Hidden-group check on; affects the score only |
 | `hidden_groups.yaml` | Check on; a confirmed group gives HOLD |
 | `hidden_groups_critical.yaml` | Check on; a severe group gives a ROLLBACK recommendation |
@@ -100,11 +114,11 @@ measurements, so they vary slightly between runs and machines.
 
 | Path | Contents |
 |---|---|
-| `src/mqvg/` | `config`, `loader`, `pipeline`, `scoring`, `rules`, `explain`, `reporting`, `workflow`, `hidden_groups`, `checks/` |
+| `src/mqvg/` | `config`, `loader`, `model_safety`, `pipeline`, `scoring`, `rules`, `explain`, `reporting`, `workflow`, `hidden_groups`, `checks/`, `api/` |
 | `configs/` | validation profiles |
 | `fixtures/`, `data/` | sample models and evaluation data |
 | `scripts/` | demonstration and study helpers (not part of the gate) |
-| `docs/` | `workflow.md`, `scoring.md`, `reporting.md`, `hidden_groups.md`, `supported_models.md`, `assumptions.md`, `sensitivity_analysis.md`, `baseline_comparison.md`, `extended_checks.md`, `sample_reports/` |
+| `docs/` | `workflow.md`, `scoring.md`, `reporting.md`, `hidden_groups.md`, `supported_models.md`, `assumptions.md`, `sensitivity_analysis.md`, `baseline_comparison.md`, `extended_checks.md`, `api.md`, `api_openapi.json`, `sample_reports/` |
 
 ## Current limits
 
@@ -112,7 +126,7 @@ measurements, so they vary slightly between runs and machines.
 - Thresholds and weights are not calibrated on real-world model collections.
 - Explanations are rule-based, not SHAP/LIME.
 - Not implemented: a rollback-capability check, conflicting labels in the training data,
-  sandboxed model loading, and an HTTP API. The extended profile adds a static model-file
+  sandboxed model loading, asynchronous jobs, TLS, rate limiting and per-client credentials in the API. The extended profile adds a static model-file
   scan (not a sandbox), conflicting labels in the evaluation data, training duplicates from
   the row hashes, and CPU time (`docs/extended_checks.md`).
 - Hidden-group findings are statistical associations, not causes, and the
