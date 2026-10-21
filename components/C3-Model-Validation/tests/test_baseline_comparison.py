@@ -89,3 +89,12 @@ def test_the_full_comparison_on_the_sample_models(script, tmp_path):
     assert summary["F1 only"]["caught"] < summary["full gate (default)"]["caught"]
     text = out.read_text(encoding="utf-8")
     assert "overstates what it detects" in text and "built by the project author" in text
+    # the machine-readable copy the dashboard reads says the same thing
+    import json
+    study = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    assert study["study"] == "baseline_comparison" and study["generated_at_utc"]
+    assert study["gates"] == list(script.GATES) and study["summary"] == summary
+    assert {m["name"] for m in study["models"]} == set(outcomes)
+    assert {m["name"]: m["truth"] for m in study["models"]}["hidden_group"] == "defect"
+    assert {m["name"]: m["truth"] for m in study["models"]}["slow"] == "excluded"
+    assert any("two clean models" in c for c in study["caveats"])

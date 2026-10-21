@@ -1,0 +1,35 @@
+{
+ "run_id": "bacacee0deb44c22ba9b7d96fb274362",
+ "candidate_id": "leaky",
+ "profile": "extended",
+ "decision": "ROLLBACK",
+ "action_mode": "RECOMMENDATION",
+ "summary": "ROLLBACK recommended: a critical rule overrides the score. MQS 85.7. Reason(s): Target leakage detected.",
+ "mqs": 85.68983928530707,
+ "mqs_lower_bound": 85.68983928530707,
+ "mqs_sufficient_evidence": true,
+ "overall_coverage": 1.0,
+ "provisional": false,
+ "dimension_scores": {
+  "training_validity": 74.74052589103461,
+  "model_behaviour": 86.5353630359934,
+  "operational_readiness": 100.0
+ },
+ "triggered_rules": [
+  {
+   "rule_id": "target_leakage",
+   "kind": "critical",
+   "effect": "ROLLBACK",
+   "reason": "Target leakage detected: check 'leakage.single_feature_predictiveness' is FAIL (The strongest single feature, 'prior_high_income_flag', reaches a cross-validated ROC AUC of 0.968 on its own (13 features, 9768 rows). Values near 1.0 suggest the feature leaks the label.)."
+  }
+ ],
+ "check_counts": {
+  "PASS": 22,
+  "FAIL": 1,
+  "WARN": 2
+ },
+ "created_at_utc": "2026-10-20T06:47:46.454475Z",
+ "result_url": "/v1/validations/bacacee0deb44c22ba9b7d96fb274362",
+ "report_url": "/v1/validations/bacacee0deb44c22ba9b7d96fb274362/report",
+ "notice": "This is a recommendation only. Nothing was deployed, promoted or rolled back."
+}

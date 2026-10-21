@@ -1,0 +1,483 @@
+{
+  "study": "sensitivity_analysis",
+  "generated_at_utc": "2026-10-20T17:17:41+00:00",
+  "families": [
+    "weights",
+    "thresholds",
+    "per-check",
+    "bands",
+    "missing"
+  ],
+  "cases": [
+    {
+      "model": "good",
+      "profile": "default",
+      "baseline_decision": "PROMOTE",
+      "baseline_mqs": 86.8850914526033,
+      "mqs_range": [
+        79.0453820802455,
+        97.37374373087437
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "PROMOTE": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 3,
+          "decisions": {
+            "ROLLBACK": 1,
+            "PROMOTE": 3
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 34,
+          "decisions": {
+            "PROMOTE": 34
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "PROMOTE": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "PROMOTE": 2
+          }
+        }
+      },
+      "flips": [
+        {
+          "family": "thresholds",
+          "label": "all pass_at/fail_at x0.8",
+          "decision": "ROLLBACK"
+        }
+      ]
+    },
+    {
+      "model": "leaky",
+      "profile": "default",
+      "baseline_decision": "ROLLBACK",
+      "baseline_mqs": 83.80263004943463,
+      "mqs_range": [
+        73.41339905410048,
+        95.49851914741198
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "ROLLBACK": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 3,
+          "decisions": {
+            "ROLLBACK": 3,
+            "PROMOTE": 1
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 34,
+          "decisions": {
+            "ROLLBACK": 34
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "ROLLBACK": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "ROLLBACK": 2
+          }
+        }
+      },
+      "flips": [
+        {
+          "family": "thresholds",
+          "label": "all pass_at/fail_at x1.2",
+          "decision": "PROMOTE"
+        }
+      ]
+    },
+    {
+      "model": "overfit",
+      "profile": "default",
+      "baseline_decision": "HOLD",
+      "baseline_mqs": 71.89817915272783,
+      "mqs_range": [
+        61.995724305346094,
+        93.64714765570541
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "HOLD": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 4,
+          "decisions": {
+            "HOLD": 4
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 34,
+          "decisions": {
+            "HOLD": 34
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "HOLD": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "HOLD": 2
+          }
+        }
+      },
+      "flips": []
+    },
+    {
+      "model": "biased",
+      "profile": "default",
+      "baseline_decision": "ROLLBACK",
+      "baseline_mqs": 75.35791004569562,
+      "mqs_range": [
+        61.44348820616041,
+        94.97991546881835
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "ROLLBACK": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 4,
+          "decisions": {
+            "ROLLBACK": 4
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 34,
+          "decisions": {
+            "ROLLBACK": 34
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "ROLLBACK": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "ROLLBACK": 2
+          }
+        }
+      },
+      "flips": []
+    },
+    {
+      "model": "miscalibrated",
+      "profile": "default",
+      "baseline_decision": "HOLD",
+      "baseline_mqs": 80.32092307211155,
+      "mqs_range": [
+        68.5426538195554,
+        96.06111336135106
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "HOLD": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 4,
+          "decisions": {
+            "HOLD": 4
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 34,
+          "decisions": {
+            "HOLD": 34
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "HOLD": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "HOLD": 2
+          }
+        }
+      },
+      "flips": []
+    },
+    {
+      "model": "slow",
+      "profile": "default",
+      "baseline_decision": "HOLD",
+      "baseline_mqs": 85.69629849722773,
+      "mqs_range": [
+        77.79985534941467,
+        96.4371956342689
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "HOLD": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 2,
+          "decisions": {
+            "ROLLBACK": 2,
+            "HOLD": 2
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 33,
+          "decisions": {
+            "HOLD": 33,
+            "ROLLBACK": 1
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "HOLD": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "HOLD": 2
+          }
+        }
+      },
+      "flips": [
+        {
+          "family": "thresholds",
+          "label": "all pass_at/fail_at x0.8",
+          "decision": "ROLLBACK"
+        },
+        {
+          "family": "thresholds",
+          "label": "all pass_at/fail_at x0.9",
+          "decision": "ROLLBACK"
+        },
+        {
+          "family": "per-check",
+          "label": "fairness.selection_rate_ratio x0.9",
+          "decision": "ROLLBACK"
+        }
+      ]
+    },
+    {
+      "model": "corrupt",
+      "profile": "default",
+      "baseline_decision": "ROLLBACK",
+      "baseline_mqs": 99.8976248976249,
+      "mqs_range": [
+        22.4769656019656,
+        99.8976248976249
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "ROLLBACK": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 4,
+          "decisions": {
+            "ROLLBACK": 4
+          }
+        },
+        "per-check": {
+          "total": 34,
+          "kept": 34,
+          "decisions": {
+            "ROLLBACK": 34
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "ROLLBACK": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "ROLLBACK": 2
+          }
+        }
+      },
+      "flips": []
+    },
+    {
+      "model": "hidden_group",
+      "profile": "hidden_groups",
+      "baseline_decision": "HOLD",
+      "baseline_mqs": 88.28858555565068,
+      "mqs_range": [
+        81.26173688904109,
+        97.65771711113014
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "HOLD": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 4,
+          "decisions": {
+            "HOLD": 4
+          }
+        },
+        "per-check": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "HOLD": 36
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "HOLD": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "HOLD": 2
+          }
+        }
+      },
+      "flips": []
+    },
+    {
+      "model": "hidden_group_null",
+      "profile": "hidden_groups",
+      "baseline_decision": "PROMOTE",
+      "baseline_mqs": 95.55427647157812,
+      "mqs_range": [
+        92.886842354525,
+        99.11085529431563
+      ],
+      "families": {
+        "weights": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "PROMOTE": 36
+          }
+        },
+        "thresholds": {
+          "total": 4,
+          "kept": 4,
+          "decisions": {
+            "PROMOTE": 4
+          }
+        },
+        "per-check": {
+          "total": 36,
+          "kept": 36,
+          "decisions": {
+            "PROMOTE": 36
+          }
+        },
+        "bands": {
+          "total": 25,
+          "kept": 25,
+          "decisions": {
+            "PROMOTE": 25
+          }
+        },
+        "missing": {
+          "total": 2,
+          "kept": 2,
+          "decisions": {
+            "PROMOTE": 2
+          }
+        }
+      },
+      "flips": []
+    }
+  ],
+  "design": "weights on a 0.1 grid; pass_at/fail_at moved 10% and 20% toward or away from the target (all checks, and one check at a time); promote_at 65-85 and reject_below 40-60 in steps of 5; both missing-evidence policies",
+  "caveats": [
+    "Each sample model was validated once; its stored measurements were re-scored under each perturbed configuration. Nothing was re-measured.",
+    "This analyses the sample models only. It shows how stable the recommendation is under these perturbations; it does not show that the thresholds are correct.",
+    "The perturbation design is a choice of this study; other designs would give other numbers."
+  ]
+}

@@ -19,4 +19,5 @@ reports/
 fixtures/**/train_row_hashes.txt
 
 # API run output
-mqvg_api_reports/
+mqvg_api_reports*/
+uploads/

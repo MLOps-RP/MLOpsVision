@@ -89,3 +89,13 @@ def test_the_report_is_written_and_covers_every_case(script, tmp_path):
     for name, _ in script.CASES:
         assert f"| {name} |" in text
     assert "does not show that the thresholds are correct" in text
+    import json
+    study = json.loads(out.with_suffix(".json").read_text(encoding="utf-8"))
+    assert study["study"] == "sensitivity_analysis" and study["generated_at_utc"]
+    assert [c["model"] for c in study["cases"]] == [name for name, _ in script.CASES]
+    for case in study["cases"]:
+        assert set(case["families"]) == set(study["families"])
+        for family in case["families"].values():
+            assert family["kept"] == family["decisions"].get(case["baseline_decision"], 0)
+            assert sum(family["decisions"].values()) == family["total"] > 0
+        assert len(case["flips"]) == sum(f["total"] - f["kept"] for f in case["families"].values())

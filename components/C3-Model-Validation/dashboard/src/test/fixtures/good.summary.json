@@ -1,0 +1,34 @@
+{
+ "run_id": "b5de76cda06f4fafb6f7d80f8d46df6b",
+ "candidate_id": "good",
+ "profile": "extended",
+ "decision": "PROMOTE",
+ "action_mode": "RECOMMENDATION",
+ "summary": "PROMOTE recommended: MQS 86.9 meets the promote threshold of 75; no critical rule fired, required evidence is present and every must-pass check passed.",
+ "mqs": 86.8839507761005,
+ "mqs_lower_bound": 86.8839507761005,
+ "mqs_sufficient_evidence": true,
+ "overall_coverage": 1.0,
+ "provisional": false,
+ "dimension_scores": {
+  "training_validity": 99.91923807910841,
+  "model_behaviour": 73.81635870473596,
+  "operational_readiness": 100.0
+ },
+ "triggered_rules": [
+  {
+   "rule_id": "mqs_meets_promote_threshold",
+   "kind": "score",
+   "effect": "PROMOTE",
+   "reason": "MQS 86.9 is at or above the promotion threshold of 75."
+  }
+ ],
+ "check_counts": {
+  "PASS": 22,
+  "WARN": 3
+ },
+ "created_at_utc": "2026-10-20T06:47:44.929177Z",
+ "result_url": "/v1/validations/b5de76cda06f4fafb6f7d80f8d46df6b",
+ "report_url": "/v1/validations/b5de76cda06f4fafb6f7d80f8d46df6b/report",
+ "notice": "This is a recommendation only. Nothing was deployed, promoted or rolled back."
+}

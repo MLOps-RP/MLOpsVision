@@ -1,0 +1,2108 @@
+{
+ "schema_version": "0.1.0",
+ "gate_version": "0.1.0",
+ "run_id": "7ec18704145b432b948f330d87444d02",
+ "created_at_utc": "2026-10-20T06:47:52.390548Z",
+ "candidate": {
+  "candidate_id": "hidden_group",
+  "model_path": "C:\\artifacts\\fixtures\\hidden_group\\model.joblib",
+  "model_sha256": "d8ba43f61e6789f5c0e931e6255c9f10b6bbcc3303c1e9c5ceeaca4706f6a58b",
+  "eval_data_sha256": "2f0944999996f28e9f36a49ebc65a3339d397ae87c88ba63ae7652fc96cc7801",
+  "metadata_sha256": "91f5deceff1ca5a447243fbc1adad9ce90908bb28a3f42779df1d3d1a16a177a"
+ },
+ "scenario": {
+  "mode": "real",
+  "name": null,
+  "description": null,
+  "simulated_inputs": []
+ },
+ "config_hash": "c4df90e9421a798c7e604bc928a0bd4bb70a0940c803bded662f4c6fd2e5e6d7",
+ "config_snapshot": {
+  "profile": "extended_hidden_groups",
+  "description": "Extended checks plus hidden failure group detection (a confirmed group gives HOLD).",
+  "weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "missing_policy": "exclude_and_cap",
+  "coverage": {
+   "min_dimension": 0.5,
+   "min_overall": 0.8
+  },
+  "decision": {
+   "promote_at": 75.0,
+   "reject_below": 50.0,
+   "must_pass_checks": [
+    "training_validity.metadata_completeness",
+    "training_validity.overfit_gap",
+    "calibration.ece",
+    "operational.latency",
+    "training_validity.eval_label_conflicts",
+    "operational.model_file_safety"
+   ]
+  },
+  "critical_rules": [
+   {
+    "id": "model_not_loadable",
+    "name": "Model artifact cannot be loaded",
+    "description": null,
+    "condition": {
+     "check": "operational.model_loadable",
+     "status_in": [
+      "FAIL",
+      "ERROR"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "target_leakage",
+    "name": "Target leakage detected",
+    "description": null,
+    "condition": {
+     "check": "leakage.single_feature_predictiveness",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "severe_selection_rate_disparity",
+    "name": "Severe selection-rate disparity between groups",
+    "description": null,
+    "condition": {
+     "check": "fairness.selection_rate_ratio",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "performance_below_minimum",
+    "name": "F1 below the absolute minimum",
+    "description": null,
+    "condition": {
+     "check": "behaviour.f1",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "unsafe_model_file",
+    "name": "Model file references dangerous code",
+    "description": null,
+    "condition": {
+     "check": "operational.model_file_safety",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   }
+  ],
+  "evaluation": {
+   "random_seed": 42,
+   "min_group_size": 30,
+   "ece_bins": 10,
+   "latency_warmup_runs": 5,
+   "latency_repeats": 50,
+   "robustness_noise_scale": 0.1,
+   "robustness_repeats": 5,
+   "leakage_max_rows": 20000,
+   "leakage_cv_folds": 5,
+   "cpu_min_seconds": 0.3,
+   "cpu_max_rounds": 200,
+   "cpu_sample_rows": 1000
+  },
+  "hidden_groups": {
+   "methods": [
+    "tree",
+    "kmeans"
+   ],
+   "folds": 2,
+   "tree_depth": 3,
+   "tree_min_leaf_fraction": 0.03,
+   "kmeans_clusters": 8,
+   "kmeans_weighting": "residual",
+   "min_group_rows": 30,
+   "min_group_fraction": 0.02,
+   "alpha": 0.05,
+   "min_effect": 0.1,
+   "min_rows": 1000,
+   "min_errors": 50,
+   "recalibrate": true,
+   "recalibration_trigger_ece": 0.03,
+   "max_ece": 0.15,
+   "max_overall_gap": 0.15,
+   "max_categories": 20,
+   "exclude_features": [],
+   "extra_columns": [],
+   "report_groups": 10,
+   "consequence": "hold",
+   "require_assessment": true
+  },
+  "model_safety": {
+   "refuse_at": "unrecognised",
+   "allowed_module_prefixes": [
+    "sklearn",
+    "numpy",
+    "scipy",
+    "pandas",
+    "joblib",
+    "xgboost",
+    "lightgbm",
+    "collections",
+    "copyreg",
+    "_codecs",
+    "datetime",
+    "decimal",
+    "fractions"
+   ],
+   "allowed_builtins": [
+    "list",
+    "dict",
+    "set",
+    "frozenset",
+    "tuple",
+    "object",
+    "int",
+    "float",
+    "str",
+    "bool",
+    "bytes",
+    "bytearray",
+    "complex",
+    "slice",
+    "range"
+   ],
+   "blocked_module_prefixes": [
+    "os",
+    "posix",
+    "nt",
+    "subprocess",
+    "socket",
+    "shutil",
+    "sys",
+    "ctypes",
+    "importlib",
+    "runpy",
+    "pty",
+    "marshal",
+    "pickle",
+    "_pickle",
+    "webbrowser",
+    "http",
+    "urllib",
+    "ftplib",
+    "smtplib",
+    "multiprocessing",
+    "threading",
+    "asyncio",
+    "signal",
+    "code",
+    "codeop",
+    "commands",
+    "popen2",
+    "platform",
+    "tempfile",
+    "glob",
+    "numpy.f2py",
+    "numpy.distutils",
+    "numpy.testing",
+    "pandas.io",
+    "pandas.read_pickle",
+    "sklearn.datasets",
+    "sklearn.externals"
+   ],
+   "blocked_globals": [
+    "joblib.load",
+    "joblib.numpy_pickle.load",
+    "numpy.load",
+    "numpy.fromfile",
+    "numpy.memmap",
+    "numpy.lib.npyio.load"
+   ],
+   "blocked_builtins": [
+    "eval",
+    "exec",
+    "compile",
+    "__import__",
+    "open",
+    "getattr",
+    "setattr",
+    "delattr",
+    "globals",
+    "locals",
+    "vars",
+    "input",
+    "breakpoint"
+   ]
+  },
+  "metadata": {
+   "required_fields": [
+    "model_type",
+    "task_type",
+    "target_column",
+    "positive_label",
+    "sensitive_columns",
+    "feature_columns",
+    "hyperparameters",
+    "training_metrics",
+    "train_rows",
+    "dataset"
+   ],
+   "reproducibility_fields": [
+    "random_state",
+    "split.seed",
+    "versions",
+    "train_data_sha256",
+    "code.commit"
+   ]
+  },
+  "checks": {
+   "training_validity.metadata_completeness": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.9,
+     "fail_at": 0.6,
+     "floor": 0.0
+    }
+   },
+   "training_validity.reproducibility_info": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.75,
+     "fail_at": 0.5,
+     "floor": 0.0
+    }
+   },
+   "training_validity.overfit_gap": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.1,
+     "floor": 0.25
+    }
+   },
+   "training_validity.train_eval_overlap": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.01,
+     "fail_at": 0.05,
+     "floor": 0.2
+    }
+   },
+   "training_validity.eval_label_conflicts": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.005,
+     "fail_at": 0.03,
+     "floor": 0.15
+    }
+   },
+   "training_validity.train_duplicate_rows": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.01,
+     "fail_at": 0.1,
+     "floor": 0.3
+    }
+   },
+   "leakage.single_feature_predictiveness": {
+    "enabled": true,
+    "weight": 3.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.9,
+     "fail_at": 0.95,
+     "floor": 1.0
+    }
+   },
+   "behaviour.f1": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.6,
+     "fail_at": 0.45,
+     "floor": 0.0
+    }
+   },
+   "behaviour.roc_auc": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.95,
+     "pass_at": 0.85,
+     "fail_at": 0.7,
+     "floor": 0.5
+    }
+   },
+   "behaviour.precision": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.85,
+     "pass_at": 0.65,
+     "fail_at": 0.45,
+     "floor": 0.0
+    }
+   },
+   "behaviour.recall": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.55,
+     "fail_at": 0.35,
+     "floor": 0.0
+    }
+   },
+   "behaviour.subgroup_f1_gap": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.02,
+     "pass_at": 0.1,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "fairness.selection_rate_ratio": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.9,
+     "pass_at": 0.5,
+     "fail_at": 0.2,
+     "floor": 0.0
+    }
+   },
+   "fairness.equalized_odds": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.02,
+     "pass_at": 0.1,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "calibration.ece": {
+    "enabled": true,
+    "weight": 1.5,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.1,
+     "floor": 0.25
+    }
+   },
+   "behaviour.hidden_failure_groups": {
+    "enabled": true,
+    "weight": 1.5,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.0,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "robustness.noise_degradation": {
+    "enabled": false,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.15,
+     "floor": 0.4
+    }
+   },
+   "operational.model_loadable": {
+    "enabled": true,
+    "weight": 3.0,
+    "required": true,
+    "thresholds": null
+   },
+   "operational.input_schema": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": null
+   },
+   "operational.prediction_determinism": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": null
+   },
+   "operational.malformed_input_handling": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": null
+   },
+   "operational.artifact_size": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 10.0,
+     "pass_at": 100.0,
+     "fail_at": 500.0,
+     "floor": 2000.0
+    }
+   },
+   "operational.latency": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": false,
+    "thresholds": {
+     "target": 10.0,
+     "pass_at": 50.0,
+     "fail_at": 200.0,
+     "floor": 1000.0
+    }
+   },
+   "operational.memory": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 100.0,
+     "pass_at": 500.0,
+     "fail_at": 2000.0,
+     "floor": 8000.0
+    }
+   },
+   "operational.dependency_match": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.8,
+     "fail_at": 0.5,
+     "floor": 0.0
+    }
+   },
+   "operational.model_file_safety": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.0,
+     "fail_at": 1.0,
+     "floor": 2.0
+    }
+   },
+   "operational.cpu_time": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.05,
+     "pass_at": 0.5,
+     "fail_at": 3.0,
+     "floor": 10.0
+    }
+   }
+  }
+ },
+ "environment": {
+  "machine": {
+   "platform": "Windows-11-10.0.26200-SP0",
+   "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+   "cpu_count": 12,
+   "ram_gb": 15.6,
+   "versions": {
+    "python": "3.12.1",
+    "scikit_learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "joblib": "1.6.0"
+   }
+  },
+  "timings_seconds": {
+   "load": 0.049381800010451116,
+   "training_validity": 0.12905699999828357,
+   "model_behaviour": 0.13983179999922868,
+   "operational_readiness": 0.48284479998983443,
+   "score_and_decide": 0.0002925000007962808
+  }
+ },
+ "checks": [
+  {
+   "id": "training_validity.metadata_completeness",
+   "dimension": "training_validity",
+   "name": "Share of required training-metadata fields present",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.9,
+    "fail_at": 0.6,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "10 of 10 required training-metadata fields are present.",
+   "details": {
+    "missing": [],
+    "present": [
+     "model_type",
+     "task_type",
+     "target_column",
+     "positive_label",
+     "sensitive_columns",
+     "feature_columns",
+     "hyperparameters",
+     "training_metrics",
+     "train_rows",
+     "dataset"
+    ],
+    "note": "Presence is checked; the values are not verified."
+   }
+  },
+  {
+   "id": "training_validity.reproducibility_info",
+   "dimension": "training_validity",
+   "name": "Share of reproducibility fields present (seed, versions, hashes, commit)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.75,
+    "fail_at": 0.5,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "5 of 5 reproducibility fields are present.",
+   "details": {
+    "missing": [],
+    "present": [
+     "random_state",
+     "split.seed",
+     "versions",
+     "train_data_sha256",
+     "code.commit"
+    ],
+    "note": "Presence is checked; the values are not verified."
+   }
+  },
+  {
+   "id": "training_validity.overfit_gap",
+   "dimension": "training_validity",
+   "name": "Train accuracy minus eval accuracy (needs train metrics)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": -0.015000000000000013,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.01,
+    "pass_at": 0.05,
+    "fail_at": 0.1,
+    "floor": 0.25
+   },
+   "required": false,
+   "message": "Declared training accuracy 0.671 vs measured evaluation accuracy 0.686: gap -0.015. The training value is the producer's claim and was not verified.",
+   "details": {
+    "metric": "accuracy",
+    "declared_train_value": 0.6706666666666666,
+    "measured_eval_value": 0.6856666666666666,
+    "measured_eval_metrics": {
+     "accuracy": 0.6856666666666666,
+     "f1": 0.6951180084060783
+    },
+    "declared_training_metrics": {
+     "accuracy": 0.6706666666666666,
+     "f1": 0.685049410264584
+    }
+   }
+  },
+  {
+   "id": "training_validity.train_eval_overlap",
+   "dimension": "training_validity",
+   "name": "Eval rows that also appear in training data (needs row hashes)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.01,
+    "fail_at": 0.05,
+    "floor": 0.2
+   },
+   "required": false,
+   "message": "0 of 3000 evaluation rows (0.00%) also appear in the training row hashes. Datasets can contain genuine duplicate records (0.00% of evaluation rows duplicate another evaluation row), so a small overlap is not by itself leakage. The hashes are producer-supplied.",
+   "details": {
+    "overlap_rows": 0,
+    "eval_rows": 3000,
+    "train_hashes": 6000,
+    "eval_internal_duplicate_fraction": 0.0,
+    "hash_file": "C:\\artifacts\\fixtures\\hidden_group\\train_row_hashes.txt",
+    "hashed_columns": [
+     "age",
+     "income_k",
+     "tenure_years",
+     "segment",
+     "region",
+     "channel",
+     "sex"
+    ]
+   }
+  },
+  {
+   "id": "leakage.single_feature_predictiveness",
+   "dimension": "training_validity",
+   "name": "Highest ROC AUC reached by any single feature on eval data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.6798179979777554,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.9,
+    "fail_at": 0.95,
+    "floor": 1.0
+   },
+   "required": true,
+   "message": "The strongest single feature, 'income_k', reaches a cross-validated ROC AUC of 0.680 on its own (6 features, 3000 rows). Values near 1.0 suggest the feature leaks the label.",
+   "details": {
+    "top_feature": "income_k",
+    "top_features": {
+     "income_k": 0.6798179979777554,
+     "tenure_years": 0.5807626751408349,
+     "age": 0.5629682552028356,
+     "segment": 0.5532654807275635,
+     "channel": 0.5236811520128001
+    },
+    "all_features": {
+     "income_k": 0.6798179979777554,
+     "tenure_years": 0.5807626751408349,
+     "age": 0.5629682552028356,
+     "segment": 0.5532654807275635,
+     "channel": 0.5236811520128001,
+     "region": 0.5021684685385394
+    },
+    "failed_features": {},
+    "not_assessed_columns": [],
+    "rows_used": 3000,
+    "sampled": false,
+    "cv_folds": 5,
+    "tree_depth": 4,
+    "positive_label": "approved",
+    "caveat": "A legitimately strong feature also scores high; leakage spread over several features is not detected."
+   }
+  },
+  {
+   "id": "training_validity.eval_label_conflicts",
+   "dimension": "training_validity",
+   "name": "Evaluation rows whose features are identical to another row's but whose label differs",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.005,
+    "fail_at": 0.03,
+    "floor": 0.15
+   },
+   "required": false,
+   "message": "0 of 3000 evaluation rows (0.00%) share their feature values with a row that has a different label (0 conflicting groups among 0 groups of repeated feature values). Conflicting labels put a ceiling on the accuracy any model can reach and make the measured metrics unreliable.",
+   "details": {
+    "conflict_rows": 0,
+    "conflicting_groups": 0,
+    "repeated_groups": 0,
+    "rows_in_repeated_groups": 0,
+    "eval_rows": 3000,
+    "feature_columns": [
+     "age",
+     "income_k",
+     "tenure_years",
+     "segment",
+     "region",
+     "channel"
+    ],
+    "caveat": "Only exact repeats of the feature values are found, so data with continuous features has little power; the gate cannot check the training labels, which it does not receive."
+   }
+  },
+  {
+   "id": "training_validity.train_duplicate_rows",
+   "dimension": "training_validity",
+   "name": "Training rows that duplicate another training row (from the supplied row hashes)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.01,
+    "fail_at": 0.1,
+    "floor": 0.3
+   },
+   "required": false,
+   "message": "0 of 6000 training rows (0.00%) duplicate another training row. Duplicates can make a model look better on rows it has memorised and are often a data-quality problem upstream. The hashes are producer-supplied and cover the feature columns only, so rows with the same features and different labels also count as duplicates.",
+   "details": {
+    "duplicate_rows": 0,
+    "training_rows": 6000,
+    "distinct_rows": 6000,
+    "hash_file": "C:\\artifacts\\fixtures\\hidden_group\\train_row_hashes.txt",
+    "caveat": "The gate does not see the training data, only its row hashes."
+   }
+  },
+  {
+   "id": "behaviour.f1",
+   "dimension": "model_behaviour",
+   "name": "F1 on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 86.88975105075977,
+   "raw_value": 0.6951180084060782,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.6,
+    "fail_at": 0.45,
+    "floor": 0.0
+   },
+   "required": true,
+   "message": "F1 is 0.695 on 3000 evaluation rows (an always-positive baseline scores 0.665).",
+   "details": {
+    "confusion": {
+     "tp": 1075,
+     "fp": 523,
+     "fn": 420,
+     "tn": 982
+    },
+    "precision": 0.6727158948685857,
+    "recall": 0.7190635451505016,
+    "f1": 0.6951180084060782,
+    "precision_undefined": false,
+    "n_rows": 3000,
+    "dropped_rows_missing_label": 0,
+    "positive_label": "approved",
+    "positive_label_source": "declared in bundle or metadata",
+    "prevalence": 0.49833333333333335,
+    "baseline_always_positive": {
+     "precision": 0.49833333333333335,
+     "recall": 1.0,
+     "f1": 0.6651835372636263,
+     "roc_auc": 0.5
+    }
+   }
+  },
+  {
+   "id": "behaviour.roc_auc",
+   "dimension": "model_behaviour",
+   "name": "ROC AUC on the evaluation data",
+   "status": "WARN",
+   "evidence_source": "MEASURED",
+   "score": 55.2517250191669,
+   "raw_value": 0.748632762586251,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.95,
+    "pass_at": 0.85,
+    "fail_at": 0.7,
+    "floor": 0.5
+   },
+   "required": true,
+   "message": "ROC AUC is 0.749 on 3000 evaluation rows (0.5 is chance).",
+   "details": {
+    "n_rows": 3000,
+    "score_source": "predict_proba",
+    "positive_label": "approved",
+    "positive_label_source": "declared in bundle or metadata"
+   }
+  },
+  {
+   "id": "behaviour.precision",
+   "dimension": "model_behaviour",
+   "name": "Precision on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 79.14304645512775,
+   "raw_value": 0.6727158948685857,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.85,
+    "pass_at": 0.65,
+    "fail_at": 0.45,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "Precision is 0.673 on 3000 evaluation rows (an always-positive baseline scores 0.498).",
+   "details": {
+    "confusion": {
+     "tp": 1075,
+     "fp": 523,
+     "fn": 420,
+     "tn": 982
+    },
+    "precision": 0.6727158948685857,
+    "recall": 0.7190635451505016,
+    "f1": 0.6951180084060782,
+    "precision_undefined": false,
+    "n_rows": 3000,
+    "dropped_rows_missing_label": 0,
+    "positive_label": "approved",
+    "positive_label_source": "declared in bundle or metadata",
+    "prevalence": 0.49833333333333335,
+    "baseline_always_positive": {
+     "precision": 0.49833333333333335,
+     "recall": 1.0,
+     "f1": 0.6651835372636263,
+     "roc_auc": 0.5
+    }
+   }
+  },
+  {
+   "id": "behaviour.recall",
+   "dimension": "model_behaviour",
+   "name": "Recall on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 89.8829431438127,
+   "raw_value": 0.7190635451505016,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.55,
+    "fail_at": 0.35,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "Recall is 0.719 on 3000 evaluation rows.",
+   "details": {
+    "confusion": {
+     "tp": 1075,
+     "fp": 523,
+     "fn": 420,
+     "tn": 982
+    },
+    "precision": 0.6727158948685857,
+    "recall": 0.7190635451505016,
+    "f1": 0.6951180084060782,
+    "precision_undefined": false,
+    "n_rows": 3000,
+    "dropped_rows_missing_label": 0,
+    "positive_label": "approved",
+    "positive_label_source": "declared in bundle or metadata",
+    "prevalence": 0.49833333333333335,
+    "baseline_always_positive": {
+     "precision": 0.49833333333333335,
+     "recall": 1.0,
+     "f1": 0.6651835372636263,
+     "roc_auc": 0.5
+    }
+   }
+  },
+  {
+   "id": "behaviour.subgroup_f1_gap",
+   "dimension": "model_behaviour",
+   "name": "Largest F1 difference between sufficiently large subgroups",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.004715001997385393,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.02,
+    "pass_at": 0.1,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "Largest subgroup F1 gap is 0.005 for 'sex': Female 0.693 vs Male 0.697.",
+   "details": {
+    "min_group_size": 30,
+    "evaluated_columns": [
+     "sex"
+    ],
+    "skipped_columns": {},
+    "columns": {
+     "sex": {
+      "groups": {
+       "Female": {
+        "n": 1449,
+        "selection_rate": 0.5327812284334024,
+        "tpr": 0.7202797202797203,
+        "fpr": 0.35013623978201636,
+        "f1": 0.6926698049764627,
+        "tp": 515,
+        "fp": 257,
+        "fn": 200,
+        "tn": 477
+       },
+       "Male": {
+        "n": 1551,
+        "selection_rate": 0.5325596389426177,
+        "tpr": 0.717948717948718,
+        "fpr": 0.3450064850843061,
+        "f1": 0.6973848069738481,
+        "tp": 560,
+        "fp": 266,
+        "fn": 220,
+        "tn": 505
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     }
+    },
+    "worst_column": "sex",
+    "per_column": {
+     "sex": {
+      "gap": 0.004715001997385393,
+      "lowest_group": "Female",
+      "lowest_f1": 0.6926698049764627,
+      "highest_group": "Male",
+      "highest_f1": 0.6973848069738481
+     }
+    },
+    "undefined_columns": {}
+   }
+  },
+  {
+   "id": "fairness.selection_rate_ratio",
+   "dimension": "model_behaviour",
+   "name": "Lowest/highest group selection rate (worst over sensitive attributes)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.99958408915525,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.9,
+    "pass_at": 0.5,
+    "fail_at": 0.2,
+    "floor": 0.0
+   },
+   "required": true,
+   "message": "Lowest/highest group selection rate is 1.000 for 'sex': Male 53.3% vs Female 53.3%.",
+   "details": {
+    "min_group_size": 30,
+    "evaluated_columns": [
+     "sex"
+    ],
+    "skipped_columns": {},
+    "columns": {
+     "sex": {
+      "groups": {
+       "Female": {
+        "n": 1449,
+        "selection_rate": 0.5327812284334024,
+        "tpr": 0.7202797202797203,
+        "fpr": 0.35013623978201636,
+        "f1": 0.6926698049764627,
+        "tp": 515,
+        "fp": 257,
+        "fn": 200,
+        "tn": 477
+       },
+       "Male": {
+        "n": 1551,
+        "selection_rate": 0.5325596389426177,
+        "tpr": 0.717948717948718,
+        "fpr": 0.3450064850843061,
+        "f1": 0.6973848069738481,
+        "tp": 560,
+        "fp": 266,
+        "fn": 220,
+        "tn": 505
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     }
+    },
+    "worst_column": "sex",
+    "per_column": {
+     "sex": {
+      "ratio": 0.99958408915525,
+      "parity_difference": 0.00022158949078465717,
+      "lowest_group": "Male",
+      "highest_group": "Female",
+      "lowest_rate": 0.5325596389426177,
+      "highest_rate": 0.5327812284334024,
+      "vacuous_no_positive_predictions": false
+     }
+    }
+   }
+  },
+  {
+   "id": "fairness.equalized_odds",
+   "dimension": "model_behaviour",
+   "name": "Equalized-odds difference (worst over sensitive attributes)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.005129754697710265,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.02,
+    "pass_at": 0.1,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "Equalized-odds difference is 0.005 for 'sex' (true-positive-rate gap 0.002, false-positive-rate gap 0.005).",
+   "details": {
+    "min_group_size": 30,
+    "evaluated_columns": [
+     "sex"
+    ],
+    "skipped_columns": {},
+    "columns": {
+     "sex": {
+      "groups": {
+       "Female": {
+        "n": 1449,
+        "selection_rate": 0.5327812284334024,
+        "tpr": 0.7202797202797203,
+        "fpr": 0.35013623978201636,
+        "f1": 0.6926698049764627,
+        "tp": 515,
+        "fp": 257,
+        "fn": 200,
+        "tn": 477
+       },
+       "Male": {
+        "n": 1551,
+        "selection_rate": 0.5325596389426177,
+        "tpr": 0.717948717948718,
+        "fpr": 0.3450064850843061,
+        "f1": 0.6973848069738481,
+        "tp": 560,
+        "fp": 266,
+        "fn": 220,
+        "tn": 505
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     }
+    },
+    "worst_column": "sex",
+    "per_column": {
+     "sex": {
+      "equalized_odds_difference": 0.005129754697710265,
+      "tpr_difference": 0.002331002331002363,
+      "fpr_difference": 0.005129754697710265
+     }
+    },
+    "undefined_columns": {}
+   }
+  },
+  {
+   "id": "behaviour.hidden_failure_groups",
+   "dimension": "model_behaviour",
+   "name": "Largest excess error rate (observed minus the model's own expected error) among feature-defined groups found on held-out rows; 0 if none",
+   "status": "FAIL",
+   "evidence_source": "MEASURED",
+   "score": 1.036228020581642,
+   "raw_value": 0.4948188598970918,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.0,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "6 hidden failure group(s) found. The worst, 'segment = d AND tenure_years > 6.57 AND income_k > 57' (1.1% of rows), has an observed error rate of 76.5% against 27.0% expected (+49.5% points, 95% CI +33.0% to +60.6%, adjusted p 5.2e-10, found by tree and tested on held-out rows).",
+   "details": {
+    "methods": [
+     "tree",
+     "kmeans"
+    ],
+    "folds": 2,
+    "alpha": 0.05,
+    "min_effect": 0.1,
+    "kmeans_weighting": "residual",
+    "seed": 42,
+    "n_rows": 3000,
+    "n_errors": 943,
+    "ece": 0.02497609491639796,
+    "overall_gap": 0.007648358333154914,
+    "recalibration_enabled": true,
+    "recalibrated_folds": [
+     false,
+     true
+    ],
+    "features_used": [
+     "age",
+     "income_k",
+     "tenure_years",
+     "segment",
+     "region",
+     "channel"
+    ],
+    "features_excluded": {},
+    "pooled_categories": {},
+    "extra_columns_missing": [],
+    "groups_tested": 15,
+    "groups_confirmed": 6,
+    "share_of_rows_in_confirmed_groups": 0.11933333333333333,
+    "groups": [
+     {
+      "method": "tree",
+      "fold": 0,
+      "rule": "segment = d AND tenure_years > 6.57 AND income_k > 57",
+      "n_rows": 34,
+      "share": 0.011333333333333334,
+      "observed_errors": 26,
+      "observed_error_rate": 0.7647058823529411,
+      "expected_error_rate": 0.26988702245584933,
+      "effect": 0.4948188598970918,
+      "effect_ci": [
+       0.33015159831878677,
+       0.605743122217755
+      ],
+      "p_value": 6.908255872249172e-11,
+      "adjusted_p_value": 5.181191904186879e-10,
+      "confirmed": true,
+      "discovery_effect": 0.5209969529350252
+     },
+     {
+      "method": "tree",
+      "fold": 1,
+      "rule": "segment = d AND tenure_years > 6.23 AND income_k > 53.6",
+      "n_rows": 62,
+      "share": 0.020666666666666667,
+      "observed_errors": 46,
+      "observed_error_rate": 0.7419354838709677,
+      "expected_error_rate": 0.33826128485055,
+      "effect": 0.40367419902041773,
+      "effect_ci": [
+       0.28292744167796985,
+       0.49618995373316926
+      ],
+      "p_value": 7.309930499403183e-12,
+      "adjusted_p_value": 1.0964895749104775e-10,
+      "confirmed": true,
+      "discovery_effect": 0.44354244561303774
+     },
+     {
+      "method": "tree",
+      "fold": 0,
+      "rule": "segment = d AND tenure_years > 6.57 AND income_k <= 57",
+      "n_rows": 72,
+      "share": 0.024,
+      "observed_errors": 46,
+      "observed_error_rate": 0.6388888888888888,
+      "expected_error_rate": 0.39421686506983256,
+      "effect": 0.24467202381905628,
+      "effect_ci": [
+       0.12930793960400322,
+       0.3459663378684267
+      ],
+      "p_value": 1.2404668050861614e-05,
+      "adjusted_p_value": 6.202334025430807e-05,
+      "confirmed": true,
+      "discovery_effect": 0.10870050297593112
+     },
+     {
+      "method": "kmeans",
+      "fold": 1,
+      "rule": "cluster of similar rows: region = w for 100% of rows (overall 24%); segment = d for 100% of rows (overall 25%); tenure_years averages 6.32 (overall 4.98)",
+      "n_rows": 82,
+      "share": 0.027333333333333334,
+      "observed_errors": 42,
+      "observed_error_rate": 0.5121951219512195,
+      "expected_error_rate": 0.3304012747937337,
+      "effect": 0.1817938471574858,
+      "effect_ci": [
+       0.07550644908831666,
+       0.28698976660006714
+      ],
+      "p_value": 0.00022642111545650515,
+      "adjusted_p_value": 0.0008490791829618943,
+      "confirmed": true,
+      "discovery_effect": 0.09127789770449701
+     },
+     {
+      "method": "kmeans",
+      "fold": 0,
+      "rule": "cluster of similar rows: segment = d for 100% of rows (overall 23%); region = s for 67% of rows (overall 24%); channel = u for 6% of rows (overall 51%)",
+      "n_rows": 92,
+      "share": 0.030666666666666665,
+      "observed_errors": 44,
+      "observed_error_rate": 0.4782608695652174,
+      "expected_error_rate": 0.3309417477901812,
+      "effect": 0.1473191217750362,
+      "effect_ci": [
+       0.04817963446091261,
+       0.2482012781885345
+      ],
+      "p_value": 0.0014099354357585562,
+      "adjusted_p_value": 0.0042298063072756685,
+      "confirmed": true,
+      "discovery_effect": 0.0885403645283936
+     },
+     {
+      "method": "kmeans",
+      "fold": 1,
+      "rule": "cluster of similar rows: segment = d for 100% of rows (overall 25%); region = s for 100% of rows (overall 26%); tenure_years averages 5.6 (overall 4.98)",
+      "n_rows": 81,
+      "share": 0.027,
+      "observed_errors": 34,
+      "observed_error_rate": 0.41975308641975306,
+      "expected_error_rate": 0.31035411199654095,
+      "effect": 0.10939897442321211,
+      "effect_ci": [
+       0.007955515486445353,
+       0.21810928657752693
+      ],
+      "p_value": 0.017950692388863907,
+      "adjusted_p_value": 0.03846576940470837,
+      "confirmed": true,
+      "discovery_effect": 0.0826331710294394
+     },
+     {
+      "method": "kmeans",
+      "fold": 1,
+      "rule": "cluster of similar rows: region = n for 100% of rows (overall 24%); segment = d for 100% of rows (overall 25%); tenure_years averages 5.71 (overall 4.98)",
+      "n_rows": 103,
+      "share": 0.034333333333333334,
+      "observed_errors": 40,
+      "observed_error_rate": 0.3883495145631068,
+      "expected_error_rate": 0.2920625916479639,
+      "effect": 0.0962869229151429,
+      "effect_ci": [
+       0.007799403970495444,
+       0.19280317427977983
+      ],
+      "p_value": 0.01709689817665603,
+      "adjusted_p_value": 0.03846576940470837,
+      "confirmed": false,
+      "discovery_effect": 0.13158105000772274
+     },
+     {
+      "method": "tree",
+      "fold": 1,
+      "rule": "segment = d AND tenure_years <= 6.23 AND income_k <= 64",
+      "n_rows": 183,
+      "share": 0.061,
+      "observed_errors": 61,
+      "observed_error_rate": 0.3333333333333333,
+      "expected_error_rate": 0.2721230072224106,
+      "effect": 0.0612103261109227,
+      "effect_ci": [
+       -0.0030433532849670764,
+       0.13231733603445284
+      ],
+      "p_value": 0.03238685365403719,
+      "adjusted_p_value": 0.060725350601319734,
+      "confirmed": false,
+      "discovery_effect": 0.027239035796883502
+     },
+     {
+      "method": "tree",
+      "fold": 1,
+      "rule": "segment = d AND tenure_years > 6.23 AND income_k <= 53.6",
+      "n_rows": 63,
+      "share": 0.021,
+      "observed_errors": 29,
+      "observed_error_rate": 0.4603174603174603,
+      "expected_error_rate": 0.36387342954003954,
+      "effect": 0.09644403077742075,
+      "effect_ci": [
+       -0.020784783779589755,
+       0.21823405165100673
+      ],
+      "p_value": 0.06739423206848044,
+      "adjusted_p_value": 0.11232372011413408,
+      "confirmed": false,
+      "discovery_effect": 0.2541016159277031
+     },
+     {
+      "method": "kmeans",
+      "fold": 1,
+      "rule": "cluster of similar rows: region = e for 100% of rows (overall 26%); segment = d for 52% of rows (overall 25%); tenure_years averages 5.84 (overall 4.98)",
+      "n_rows": 188,
+      "share": 0.06266666666666666,
+      "observed_errors": 62,
+      "observed_error_rate": 0.32978723404255317,
+      "expected_error_rate": 0.3283929298250417,
+      "effect": 0.0013943042175114662,
+      "effect_ci": [
+       -0.06181191983006745,
+       0.07141725427626117
+      ],
+      "p_value": 0.5151035004336862,
+      "adjusted_p_value": 0.7277631347777284,
+      "confirmed": false,
+      "discovery_effect": 0.0015905209853992195
+     }
+    ],
+    "caveats": [
+     "Expected errors come from the model's own probabilities; the test is only valid if they are calibrated. They are recalibrated per fold on the discovery rows only; grossly wrong probabilities make the check unavailable.",
+     "Groups are axis-aligned rules or clusters of similar rows, so an oblique or very small region may be missed or found only in part.",
+     "A group is an association found in the evaluation data, not a causal explanation: it says where the model fails, not why.",
+     "Features that describe a group may be proxies for sensitive characteristics (for example a relationship status standing in for sex), so the rule can reveal a protected subpopulation even though no sensitive column was named.",
+     "Detection power depends on the sample size; no group found does not mean none exists."
+    ]
+   }
+  },
+  {
+   "id": "calibration.ece",
+   "dimension": "model_behaviour",
+   "name": "Expected calibration error",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 93.75996045150086,
+   "raw_value": 0.02497609491639796,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.01,
+    "pass_at": 0.05,
+    "fail_at": 0.1,
+    "floor": 0.25
+   },
+   "required": false,
+   "message": "Expected calibration error is 0.025 (Brier 0.204, 10 bins, 3000 rows). Average predicted probability 0.519 vs observed positive rate 0.498: over-confident on average (predicts higher than observed).",
+   "details": {
+    "ece": 0.02497609491639796,
+    "max_calibration_error": 0.0340501833708271,
+    "brier_score": 0.20398670791707574,
+    "mean_score": 0.5187895255814593,
+    "observed_positive_rate": 0.49833333333333335,
+    "bins": 10,
+    "n_rows": 3000,
+    "reliability": [
+     {
+      "lower": 0.0,
+      "upper": 0.1,
+      "n": 34,
+      "mean_score": 0.08272821959073091,
+      "observed_rate": 0.08823529411764706,
+      "gap": 0.00550707452691615
+     },
+     {
+      "lower": 0.1,
+      "upper": 0.2,
+      "n": 173,
+      "mean_score": 0.15716480599293361,
+      "observed_rate": 0.13872832369942195,
+      "gap": 0.018436482293511663
+     },
+     {
+      "lower": 0.2,
+      "upper": 0.3,
+      "n": 322,
+      "mean_score": 0.25383768254165784,
+      "observed_rate": 0.2204968944099379,
+      "gap": 0.03334078813171995
+     },
+     {
+      "lower": 0.3,
+      "upper": 0.4,
+      "n": 426,
+      "mean_score": 0.35095159182153135,
+      "observed_rate": 0.31690140845070425,
+      "gap": 0.0340501833708271
+     },
+     {
+      "lower": 0.4,
+      "upper": 0.5,
+      "n": 447,
+      "mean_score": 0.4494707898762256,
+      "observed_rate": 0.41834451901565994,
+      "gap": 0.03112627086056563
+     },
+     {
+      "lower": 0.5,
+      "upper": 0.6,
+      "n": 449,
+      "mean_score": 0.5491362407636444,
+      "observed_rate": 0.532293986636971,
+      "gap": 0.016842254126673395
+     },
+     {
+      "lower": 0.6,
+      "upper": 0.7,
+      "n": 451,
+      "mean_score": 0.6501486532356451,
+      "observed_rate": 0.623059866962306,
+      "gap": 0.027088786273339105
+     },
+     {
+      "lower": 0.7,
+      "upper": 0.8,
+      "n": 402,
+      "mean_score": 0.7472820560485253,
+      "observed_rate": 0.763681592039801,
+      "gap": 0.01639953599127575
+     },
+     {
+      "lower": 0.8,
+      "upper": 0.9,
+      "n": 241,
+      "mean_score": 0.8438428772278735,
+      "observed_rate": 0.8257261410788381,
+      "gap": 0.018116736149035417
+     },
+     {
+      "lower": 0.9,
+      "upper": 1.0,
+      "n": 55,
+      "mean_score": 0.9210730221250826,
+      "observed_rate": 0.8909090909090909,
+      "gap": 0.0301639312159917
+     }
+    ],
+    "positive_label": "approved"
+   }
+  },
+  {
+   "id": "operational.model_loadable",
+   "dimension": "operational_readiness",
+   "name": "Artifact exists and loads",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": true,
+   "message": "Model loaded as Pipeline.",
+   "details": {
+    "model_type": "Pipeline",
+    "load_warnings": [],
+    "model_sha256": "d8ba43f61e6789f5c0e931e6255c9f10b6bbcc3303c1e9c5ceeaca4706f6a58b"
+   }
+  },
+  {
+   "id": "operational.input_schema",
+   "dimension": "operational_readiness",
+   "name": "Model predicts on the evaluation data schema",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": true,
+   "message": "Model predicted on 1000 evaluation rows using 6 feature columns.",
+   "details": {
+    "rows_tested": 1000,
+    "feature_columns": [
+     "age",
+     "income_k",
+     "tenure_years",
+     "segment",
+     "region",
+     "channel"
+    ]
+   }
+  },
+  {
+   "id": "operational.prediction_determinism",
+   "dimension": "operational_readiness",
+   "name": "Repeated prediction on the same data gives identical output",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": false,
+   "message": "Repeated predictions on the same rows were identical.",
+   "details": {
+    "rows_tested": 1000,
+    "probabilities_checked": true
+   }
+  },
+  {
+   "id": "operational.malformed_input_handling",
+   "dimension": "operational_readiness",
+   "name": "Malformed input is rejected cleanly instead of crashing",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": false,
+   "message": "All 3 malformed-input cases were handled.",
+   "details": {
+    "cases": {
+     "missing_column_rejected": true,
+     "non_numeric_value_rejected": true,
+     "empty_input_handled": true
+    }
+   }
+  },
+  {
+   "id": "operational.artifact_size",
+   "dimension": "operational_readiness",
+   "name": "Model file size",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0037088394165039062,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 10.0,
+    "pass_at": 100.0,
+    "fail_at": 500.0,
+    "floor": 2000.0
+   },
+   "required": false,
+   "message": "Model file is 3.8 KB.",
+   "details": {
+    "bytes": 3889
+   }
+  },
+  {
+   "id": "operational.latency",
+   "dimension": "operational_readiness",
+   "name": "95th-percentile single-row prediction latency",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 2.717934996326221,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 10.0,
+    "pass_at": 50.0,
+    "fail_at": 200.0,
+    "floor": 1000.0
+   },
+   "required": false,
+   "message": "Single-row prediction p95 latency is 2.7 ms (p50 2.0 ms) over 50 calls.",
+   "details": {
+    "p50_ms": 2.0442000022740103,
+    "p95_ms": 2.717934996326221,
+    "p99_ms": 3.339045998727668,
+    "mean_ms": 2.1526260013342835,
+    "max_ms": 3.7871999957133085,
+    "calls": 50,
+    "warmup_runs": 5,
+    "machine": {
+     "platform": "Windows-11-10.0.26200-SP0",
+     "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+     "cpu_count": 12,
+     "ram_gb": 15.6,
+     "versions": {
+      "python": "3.12.1",
+      "scikit_learn": "1.9.1",
+      "pandas": "3.0.6",
+      "numpy": "2.5.4",
+      "joblib": "1.6.0"
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.memory",
+   "dimension": "operational_readiness",
+   "name": "Memory increase when loading and predicting",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0234375,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 100.0,
+    "pass_at": 500.0,
+    "fail_at": 2000.0,
+    "floor": 8000.0
+   },
+   "required": false,
+   "message": "Loading the model and predicting on a small sample grew memory by 0 MB.",
+   "details": {
+    "note": "Resident-memory growth; noisy and includes library imports on first load.",
+    "machine": {
+     "platform": "Windows-11-10.0.26200-SP0",
+     "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+     "cpu_count": 12,
+     "ram_gb": 15.6,
+     "versions": {
+      "python": "3.12.1",
+      "scikit_learn": "1.9.1",
+      "pandas": "3.0.6",
+      "numpy": "2.5.4",
+      "joblib": "1.6.0"
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.dependency_match",
+   "dimension": "operational_readiness",
+   "name": "Share of declared library versions matching the current environment",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.8,
+    "fail_at": 0.5,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "5 of 5 declared library versions match the current environment.",
+   "details": {
+    "comparisons": {
+     "python": {
+      "declared": "3.12.1",
+      "current": "3.12.1",
+      "match": true
+     },
+     "scikit_learn": {
+      "declared": "1.9.1",
+      "current": "1.9.1",
+      "match": true
+     },
+     "pandas": {
+      "declared": "3.0.6",
+      "current": "3.0.6",
+      "match": true
+     },
+     "numpy": {
+      "declared": "2.5.4",
+      "current": "2.5.4",
+      "match": true
+     },
+     "joblib": {
+      "declared": "1.6.0",
+      "current": "1.6.0",
+      "match": true
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.model_file_safety",
+   "dimension": "operational_readiness",
+   "name": "Static scan of the model file for code references that loading would execute (0 only recognised libraries, 1 unrecognised code, 2 dangerous code)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.0,
+    "fail_at": 1.0,
+    "floor": 2.0
+   },
+   "required": true,
+   "message": "The scan found 12 code references in the model file, all on the allowlist. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.",
+   "details": {
+    "verdict": "recognised only",
+    "dangerous": [],
+    "unrecognised": [],
+    "references": [
+     "builtins.slice",
+     "joblib.numpy_pickle.NumpyArrayWrapper",
+     "numpy._core.multiarray._reconstruct",
+     "numpy._core.multiarray.scalar",
+     "numpy.dtype",
+     "numpy.float64",
+     "numpy.ndarray",
+     "sklearn.compose._column_transformer.ColumnTransformer",
+     "sklearn.linear_model._logistic.LogisticRegression",
+     "sklearn.pipeline.Pipeline",
+     "sklearn.preprocessing._data.StandardScaler",
+     "sklearn.preprocessing._encoders.OneHotEncoder"
+    ],
+    "reference_count": 12,
+    "loaded": true,
+    "refuse_at": "unrecognised",
+    "file_bytes": 3889
+   }
+  },
+  {
+   "id": "operational.cpu_time",
+   "dimension": "operational_readiness",
+   "name": "CPU time the process spends predicting one row, from a batch of evaluation rows",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.00224905303030303,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.05,
+    "pass_at": 0.5,
+    "fail_at": 3.0,
+    "floor": 10.0
+   },
+   "required": false,
+   "message": "Predicting 132000 rows used 0.30 s of process CPU time over 0.30 s of wall time: 0.002 ms of CPU per row (CPU/wall ratio 0.98; above 1 means several cores were busy).",
+   "details": {
+    "cpu_seconds": 0.296875,
+    "wall_seconds": 0.3015138999908231,
+    "rows_predicted": 132000,
+    "rounds": 132,
+    "rows_per_round": 1000,
+    "cpu_to_wall_ratio": 0.9846146396867133,
+    "machine": {
+     "platform": "Windows-11-10.0.26200-SP0",
+     "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+     "cpu_count": 12,
+     "ram_gb": 15.6,
+     "versions": {
+      "python": "3.12.1",
+      "scikit_learn": "1.9.1",
+      "pandas": "3.0.6",
+      "numpy": "2.5.4",
+      "joblib": "1.6.0"
+     }
+    },
+    "note": "Batch prediction, so it differs from the single-row latency check; depends on the machine and on other load."
+   }
+  }
+ ],
+ "scorecard": {
+  "dimensions": {
+   "training_validity": {
+    "dimension": "training_validity",
+    "score": 100.0,
+    "coverage": 1.0,
+    "provisional": false,
+    "available_checks": 7,
+    "total_checks": 7,
+    "note": null,
+    "contributions": [
+     {
+      "check_id": "training_validity.metadata_completeness",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.reproducibility_info",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.overfit_gap",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 20.0
+     },
+     {
+      "check_id": "training_validity.train_eval_overlap",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.eval_label_conflicts",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.train_duplicate_rows",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "leakage.single_feature_predictiveness",
+      "weight": 3.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 30.0
+     }
+    ]
+   },
+   "model_behaviour": {
+    "dimension": "model_behaviour",
+    "score": 76.57717111130135,
+    "coverage": 1.0,
+    "provisional": false,
+    "available_checks": 9,
+    "total_checks": 9,
+    "note": null,
+    "contributions": [
+     {
+      "check_id": "behaviour.f1",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 86.88975105075977,
+      "treatment": "counted",
+      "points": 13.367654007809195
+     },
+     {
+      "check_id": "behaviour.roc_auc",
+      "weight": 2.0,
+      "status": "WARN",
+      "score": 55.2517250191669,
+      "treatment": "counted",
+      "points": 8.500265387564138
+     },
+     {
+      "check_id": "behaviour.precision",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 79.14304645512775,
+      "treatment": "counted",
+      "points": 6.087926650394442
+     },
+     {
+      "check_id": "behaviour.recall",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 89.8829431438127,
+      "treatment": "counted",
+      "points": 6.914072549524054
+     },
+     {
+      "check_id": "behaviour.subgroup_f1_gap",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 7.6923076923076925
+     },
+     {
+      "check_id": "fairness.selection_rate_ratio",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 15.384615384615385
+     },
+     {
+      "check_id": "fairness.equalized_odds",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 7.6923076923076925
+     },
+     {
+      "check_id": "calibration.ece",
+      "weight": 1.5,
+      "status": "PASS",
+      "score": 93.75996045150086,
+      "treatment": "counted",
+      "points": 10.818456975173175
+     },
+     {
+      "check_id": "behaviour.hidden_failure_groups",
+      "weight": 1.5,
+      "status": "FAIL",
+      "score": 1.036228020581642,
+      "treatment": "counted",
+      "points": 0.11956477160557409
+     }
+    ]
+   },
+   "operational_readiness": {
+    "dimension": "operational_readiness",
+    "score": 100.0,
+    "coverage": 1.0,
+    "provisional": false,
+    "available_checks": 10,
+    "total_checks": 10,
+    "note": null,
+    "contributions": [
+     {
+      "check_id": "operational.model_loadable",
+      "weight": 3.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 20.0
+     },
+     {
+      "check_id": "operational.input_schema",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.333333333333334
+     },
+     {
+      "check_id": "operational.prediction_determinism",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.malformed_input_handling",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.artifact_size",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.latency",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.333333333333334
+     },
+     {
+      "check_id": "operational.memory",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.dependency_match",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.model_file_safety",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.333333333333334
+     },
+     {
+      "check_id": "operational.cpu_time",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     }
+    ]
+   }
+  },
+  "weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "effective_weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "mqs": 88.28858555565068,
+  "mqs_lower_bound": 88.28858555565068,
+  "overall_coverage": 1.0,
+  "provisional": false,
+  "missing_policy": "exclude_and_cap",
+  "mqs_sufficient_evidence": true,
+  "insufficient_evidence_reason": null
+ },
+ "decision": {
+  "decision": "HOLD",
+  "action_mode": "RECOMMENDATION",
+  "mqs": 88.28858555565068,
+  "overridden_by_critical": false,
+  "triggered_rules": [
+   {
+    "rule_id": "hidden_failure_groups_hold",
+    "name": "Hidden failure group found",
+    "kind": "blocking",
+    "effect": "HOLD",
+    "reason": "6 hidden failure group(s) found. The worst, 'segment = d AND tenure_years > 6.57 AND income_k > 57' (1.1% of rows), has an observed error rate of 76.5% against 27.0% expected (+49.5% points, 95% CI +33.0% to +60.6%, adjusted p 5.2e-10, found by tree and tested on held-out rows). Policy hidden_groups.consequence is 'hold': a confirmed group blocks promotion.",
+    "observed": 0.4948188598970918,
+    "threshold": "no confirmed group",
+    "check_ids": [
+     "behaviour.hidden_failure_groups"
+    ]
+   }
+  ],
+  "summary": "HOLD: the model needs review before promotion. MQS 88.3. 1 issue(s): Hidden failure group found."
+ },
+ "explanations": [
+  "Decision: HOLD: the model needs review before promotion. MQS 88.3. 1 issue(s): Hidden failure group found.",
+  "Why (blocking): 6 hidden failure group(s) found. The worst, 'segment = d AND tenure_years > 6.57 AND income_k > 57' (1.1% of rows), has an observed error rate of 76.5% against 27.0% expected (+49.5% points, 95% CI +33.0% to +60.6%, adjusted p 5.2e-10, found by tree and tested on held-out rows). Policy hidden_groups.consequence is 'hold': a confirmed group blocks promotion.",
+  "Hidden failure group (tree): segment = d AND tenure_years > 6.57 AND income_k > 57 \u2014 34 held-out rows, observed error 76.5% vs 27.0% expected; 6 confirmed group(s) in total.",
+  "Hidden failure group policy (configured): consequence 'hold', assessment required. A confirmed group blocks promotion.",
+  "Weakest checks (MQS points lost): behaviour.hidden_failure_groups (-5.7), behaviour.roc_auc (-3.4), behaviour.f1 (-1.0), behaviour.precision (-0.8), behaviour.recall (-0.4).",
+  "Evidence note: these results rely on declared (unverified) producer metadata: training_validity.overfit_gap, training_validity.train_eval_overlap, training_validity.train_duplicate_rows, operational.dependency_match.",
+  "Suggested action (behaviour.roc_auc): Improve the model's ranking quality (features, model family).",
+  "Suggested action (behaviour.hidden_failure_groups): Investigate the reported group: check its data volume and label quality, add or engineer features that separate it, or retrain with more examples from it.",
+  "These suggestions are starting points, not guarantees."
+ ]
+}

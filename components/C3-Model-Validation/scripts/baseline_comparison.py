@@ -29,6 +29,8 @@ sample models were built by the project author, so detection rates measure the
 gate against defects it was designed for, not against defects found in the wild.
 """
 import argparse
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
@@ -194,13 +196,41 @@ def render(outcomes):
     return "\n".join(lines)
 
 
+def to_json(outcomes):
+    """The same results as the Markdown, for the dashboard (docs/baseline_comparison.json)."""
+    truth = {True: "defect", False: "clean", None: "excluded"}
+    return {
+        "study": "baseline_comparison",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "gates": list(GATES),
+        "summary": rates(outcomes),
+        "models": [{
+            "name": name, "truth": truth[o["defect"]], "f1": o["f1"],
+            "metrics_not_passing": o["weak_metrics"], "injected_defect": o["injected"],
+            "decisions": o["decisions"], "promoted": o["promoted"]} for name, o in outcomes.items()],
+        "caveats": [
+            "The sample models were built by the project author, so this measures the gate against "
+            "defects it was designed for, not defects found in practice.",
+            "There are only two clean models, so the false-alarm figures are weak evidence.",
+            "The metrics-only gate also stops models whose precision, recall or ROC-AUC merely warns on "
+            "this dataset; its stopped count overstates what it detects.",
+            "A baseline that cannot compute its metrics counts as not promoted.",
+        ],
+    }
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", type=Path, default=PROJECT / "docs" / "baseline_comparison.md")
+    parser.add_argument("--json", type=Path, default=None,
+                        help="also write the results as JSON (default: next to --out)")
     args = parser.parse_args(argv)
     outcomes = collect(load_cases())
     args.out.write_text(render(outcomes), encoding="utf-8", newline="\n")
     print(f"\nwritten {args.out}")
+    json_path = args.json or args.out.with_suffix(".json")
+    json_path.write_text(json.dumps(to_json(outcomes), indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"written {json_path}")
     for gate, s in rates(outcomes).items():
         print(f"{gate:<28} stopped {s['caught']}/{s['defects']} defects, "
               f"{s['false_alarms']}/{s['clean']} false alarms")

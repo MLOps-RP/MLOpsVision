@@ -1,0 +1,77 @@
+{
+ "run_id": "0730f08e01f7426ab8b6644e9f1303ef",
+ "candidate_id": "unsafe_model",
+ "profile": "extended",
+ "decision": "ROLLBACK",
+ "action_mode": "RECOMMENDATION",
+ "summary": "ROLLBACK recommended: a critical rule overrides the score. MQS 99.9 (not reliable: no score for model behaviour and operational readiness; overall evidence 33% is below the required 80%; at worst 24.0 if missing checks had failed). Reason(s): Model artifact cannot be loaded; Model file references dangerous code.",
+ "mqs": null,
+ "mqs_lower_bound": 23.97577142373252,
+ "mqs_sufficient_evidence": false,
+ "overall_coverage": 0.3333333333333333,
+ "provisional": true,
+ "dimension_scores": {
+  "training_validity": 99.8990475988855,
+  "model_behaviour": null,
+  "operational_readiness": null
+ },
+ "triggered_rules": [
+  {
+   "rule_id": "model_not_loadable",
+   "kind": "critical",
+   "effect": "ROLLBACK",
+   "reason": "Model artifact cannot be loaded: check 'operational.model_loadable' is FAIL (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)."
+  },
+  {
+   "rule_id": "unsafe_model_file",
+   "kind": "critical",
+   "effect": "ROLLBACK",
+   "reason": "Model file references dangerous code: check 'operational.model_file_safety' is FAIL (The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.)."
+  },
+  {
+   "rule_id": "required_evidence_missing",
+   "kind": "evidence",
+   "effect": "HOLD",
+   "reason": "Required checks have no evidence: behaviour.f1, behaviour.roc_auc, fairness.selection_rate_ratio, operational.input_schema."
+  },
+  {
+   "rule_id": "overall_coverage_below_minimum",
+   "kind": "evidence",
+   "effect": "HOLD",
+   "reason": "Overall evidence coverage 33% is below the required 80%."
+  },
+  {
+   "rule_id": "must_pass:training_validity.overfit_gap",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'training_validity.overfit_gap' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.))."
+  },
+  {
+   "rule_id": "must_pass:calibration.ece",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'calibration.ece' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.))."
+  },
+  {
+   "rule_id": "must_pass:operational.latency",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'operational.latency' is UNAVAILABLE; it must PASS before promotion (Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.))."
+  },
+  {
+   "rule_id": "must_pass:operational.model_file_safety",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'operational.model_file_safety' is FAIL; it must PASS before promotion (The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.)."
+  }
+ ],
+ "check_counts": {
+  "PASS": 8,
+  "UNAVAILABLE": 15,
+  "FAIL": 2
+ },
+ "created_at_utc": "2026-10-20T06:47:54.164123Z",
+ "result_url": "/v1/validations/0730f08e01f7426ab8b6644e9f1303ef",
+ "report_url": "/v1/validations/0730f08e01f7426ab8b6644e9f1303ef/report",
+ "notice": "This is a recommendation only. Nothing was deployed, promoted or rolled back."
+}

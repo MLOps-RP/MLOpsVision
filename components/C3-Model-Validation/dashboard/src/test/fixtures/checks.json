@@ -1,0 +1,191 @@
+[
+ {
+  "id": "training_validity.metadata_completeness",
+  "dimension": "training_validity",
+  "direction": "higher_is_better",
+  "unit": "fraction",
+  "description": "Share of required training-metadata fields present"
+ },
+ {
+  "id": "training_validity.reproducibility_info",
+  "dimension": "training_validity",
+  "direction": "higher_is_better",
+  "unit": "fraction",
+  "description": "Share of reproducibility fields present (seed, versions, hashes, commit)"
+ },
+ {
+  "id": "training_validity.overfit_gap",
+  "dimension": "training_validity",
+  "direction": "lower_is_better",
+  "unit": "accuracy gap",
+  "description": "Train accuracy minus eval accuracy (needs train metrics)"
+ },
+ {
+  "id": "training_validity.train_eval_overlap",
+  "dimension": "training_validity",
+  "direction": "lower_is_better",
+  "unit": "fraction of eval rows",
+  "description": "Eval rows that also appear in training data (needs row hashes)"
+ },
+ {
+  "id": "leakage.single_feature_predictiveness",
+  "dimension": "training_validity",
+  "direction": "lower_is_better",
+  "unit": "ROC AUC",
+  "description": "Highest ROC AUC reached by any single feature on eval data"
+ },
+ {
+  "id": "training_validity.eval_label_conflicts",
+  "dimension": "training_validity",
+  "direction": "lower_is_better",
+  "unit": "fraction of eval rows",
+  "description": "Evaluation rows whose features are identical to another row's but whose label differs"
+ },
+ {
+  "id": "training_validity.train_duplicate_rows",
+  "dimension": "training_validity",
+  "direction": "lower_is_better",
+  "unit": "fraction of training rows",
+  "description": "Training rows that duplicate another training row (from the supplied row hashes)"
+ },
+ {
+  "id": "behaviour.f1",
+  "dimension": "model_behaviour",
+  "direction": "higher_is_better",
+  "unit": "score",
+  "description": "F1 on the evaluation data"
+ },
+ {
+  "id": "behaviour.roc_auc",
+  "dimension": "model_behaviour",
+  "direction": "higher_is_better",
+  "unit": "score",
+  "description": "ROC AUC on the evaluation data"
+ },
+ {
+  "id": "behaviour.precision",
+  "dimension": "model_behaviour",
+  "direction": "higher_is_better",
+  "unit": "score",
+  "description": "Precision on the evaluation data"
+ },
+ {
+  "id": "behaviour.recall",
+  "dimension": "model_behaviour",
+  "direction": "higher_is_better",
+  "unit": "score",
+  "description": "Recall on the evaluation data"
+ },
+ {
+  "id": "behaviour.subgroup_f1_gap",
+  "dimension": "model_behaviour",
+  "direction": "lower_is_better",
+  "unit": "F1 gap",
+  "description": "Largest F1 difference between sufficiently large subgroups"
+ },
+ {
+  "id": "fairness.selection_rate_ratio",
+  "dimension": "model_behaviour",
+  "direction": "higher_is_better",
+  "unit": "ratio",
+  "description": "Lowest/highest group selection rate (worst over sensitive attributes)"
+ },
+ {
+  "id": "fairness.equalized_odds",
+  "dimension": "model_behaviour",
+  "direction": "lower_is_better",
+  "unit": "difference",
+  "description": "Equalized-odds difference (worst over sensitive attributes)"
+ },
+ {
+  "id": "behaviour.hidden_failure_groups",
+  "dimension": "model_behaviour",
+  "direction": "lower_is_better",
+  "unit": "excess error rate",
+  "description": "Largest excess error rate (observed minus the model's own expected error) among feature-defined groups found on held-out rows; 0 if none"
+ },
+ {
+  "id": "calibration.ece",
+  "dimension": "model_behaviour",
+  "direction": "lower_is_better",
+  "unit": "ECE",
+  "description": "Expected calibration error"
+ },
+ {
+  "id": "robustness.noise_degradation",
+  "dimension": "model_behaviour",
+  "direction": "lower_is_better",
+  "unit": "relative F1 drop",
+  "description": "F1 drop under input perturbation"
+ },
+ {
+  "id": "operational.model_loadable",
+  "dimension": "operational_readiness",
+  "direction": "binary",
+  "unit": "pass/fail",
+  "description": "Artifact exists and loads"
+ },
+ {
+  "id": "operational.input_schema",
+  "dimension": "operational_readiness",
+  "direction": "binary",
+  "unit": "pass/fail",
+  "description": "Model predicts on the evaluation data schema"
+ },
+ {
+  "id": "operational.prediction_determinism",
+  "dimension": "operational_readiness",
+  "direction": "binary",
+  "unit": "pass/fail",
+  "description": "Repeated prediction on the same data gives identical output"
+ },
+ {
+  "id": "operational.malformed_input_handling",
+  "dimension": "operational_readiness",
+  "direction": "binary",
+  "unit": "pass/fail",
+  "description": "Malformed input is rejected cleanly instead of crashing"
+ },
+ {
+  "id": "operational.artifact_size",
+  "dimension": "operational_readiness",
+  "direction": "lower_is_better",
+  "unit": "MB",
+  "description": "Model file size"
+ },
+ {
+  "id": "operational.latency",
+  "dimension": "operational_readiness",
+  "direction": "lower_is_better",
+  "unit": "ms",
+  "description": "95th-percentile single-row prediction latency"
+ },
+ {
+  "id": "operational.memory",
+  "dimension": "operational_readiness",
+  "direction": "lower_is_better",
+  "unit": "MB",
+  "description": "Memory increase when loading and predicting"
+ },
+ {
+  "id": "operational.dependency_match",
+  "dimension": "operational_readiness",
+  "direction": "higher_is_better",
+  "unit": "fraction",
+  "description": "Share of declared library versions matching the current environment"
+ },
+ {
+  "id": "operational.model_file_safety",
+  "dimension": "operational_readiness",
+  "direction": "lower_is_better",
+  "unit": "severity 0-2",
+  "description": "Static scan of the model file for code references that loading would execute (0 only recognised libraries, 1 unrecognised code, 2 dangerous code)"
+ },
+ {
+  "id": "operational.cpu_time",
+  "dimension": "operational_readiness",
+  "direction": "lower_is_better",
+  "unit": "ms CPU per row",
+  "description": "CPU time the process spends predicting one row, from a batch of evaluation rows"
+ }
+]

@@ -31,6 +31,8 @@ thresholds.
 """
 import argparse
 import itertools
+import json
+from datetime import datetime, timezone
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -136,6 +138,8 @@ def judge(checks, config):
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--out", type=Path, default=PROJECT / "docs" / "sensitivity_analysis.md")
+    parser.add_argument("--json", type=Path, default=None,
+                        help="also write the results as JSON (default: next to --out)")
     args = parser.parse_args(argv)
 
     families = ["weights", "thresholds", "per-check", "bands", "missing"]
@@ -210,6 +214,33 @@ def main(argv=None) -> int:
               "numbers.", ""]
     args.out.write_text("\n".join(lines), encoding="utf-8", newline="\n")
     print(f"\nwritten {args.out}")
+
+    cases = []
+    for name, (profile, decision, mqs) in baseline.items():
+        lo, hi = mqs_range[name]
+        cases.append({
+            "model": name, "profile": profile, "baseline_decision": decision, "baseline_mqs": mqs,
+            "mqs_range": None if lo is None else [lo, hi],
+            "families": {f: {"total": sum(table[name][f].values()), "kept": table[name][f][decision],
+                             "decisions": dict(table[name][f])} for f in families},
+            "flips": [{"family": fam, "label": label, "decision": d} for fam, label, d in flips[name]]})
+    study = {
+        "study": "sensitivity_analysis",
+        "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "families": families, "cases": cases,
+        "design": ("weights on a 0.1 grid; pass_at/fail_at moved 10% and 20% toward or away from "
+                   "the target (all checks, and one check at a time); promote_at 65-85 and "
+                   "reject_below 40-60 in steps of 5; both missing-evidence policies"),
+        "caveats": [
+            "Each sample model was validated once; its stored measurements were re-scored under each "
+            "perturbed configuration. Nothing was re-measured.",
+            "This analyses the sample models only. It shows how stable the recommendation is under these "
+            "perturbations; it does not show that the thresholds are correct.",
+            "The perturbation design is a choice of this study; other designs would give other numbers.",
+        ]}
+    json_path = args.json or args.out.with_suffix(".json")
+    json_path.write_text(json.dumps(study, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"written {json_path}")
     return 0
 
 

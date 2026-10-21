@@ -1,0 +1,171 @@
+{
+    "catalogue_found": true,
+    "error": null,
+    "candidates": [
+        {
+            "id": "good",
+            "description": "A well-behaved baseline classifier on the Adult income data.",
+            "model_path": "fixtures/good/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/good/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "leaky",
+            "description": "Trained with an extra column that gives away the answer (target leakage).",
+            "model_path": "fixtures/leaky/model.joblib",
+            "eval_data_path": "fixtures/leaky/eval.csv",
+            "metadata_path": "fixtures/leaky/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "overfit",
+            "description": "A very deep decision tree that memorises its training data.",
+            "model_path": "fixtures/overfit/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/overfit/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "biased",
+            "description": "Trained on labels that systematically disadvantage one group.",
+            "model_path": "fixtures/biased/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/biased/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "miscalibrated",
+            "description": "Its confidence scores are unreliable, even though its accuracy looks fine.",
+            "model_path": "fixtures/miscalibrated/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/miscalibrated/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "slow",
+            "description": "A very large random forest that is heavy and slow to run.",
+            "model_path": "fixtures/slow/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/slow/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "corrupt",
+            "description": "A truncated model file that cannot be loaded.",
+            "model_path": "fixtures/corrupt/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/corrupt/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "good_incomplete_metadata",
+            "description": "The good model, but most of its training details are missing from the metadata.",
+            "model_path": "fixtures/good/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/good_incomplete_metadata/metadata.json",
+            "train_row_hashes_path": null,
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "good_no_sensitive",
+            "description": "The good model, checked with evaluation data that lacks the sex and race columns.",
+            "model_path": "fixtures/good/model.joblib",
+            "eval_data_path": "fixtures/good_no_sensitive/eval.csv",
+            "metadata_path": "fixtures/good_no_sensitive/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "label_conflicts",
+            "description": "The good model, checked with evaluation data where identical rows carry opposite labels.",
+            "model_path": "fixtures/good/model.joblib",
+            "eval_data_path": "fixtures/label_conflicts/eval.csv",
+            "metadata_path": "fixtures/label_conflicts/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "duplicate_training",
+            "description": "The good model, whose training data contains many repeated rows.",
+            "model_path": "fixtures/good/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/duplicate_training/metadata.json",
+            "train_row_hashes_path": "fixtures/duplicate_training/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "hidden_group",
+            "description": "Looks healthy overall but fails badly for one small group of rows.",
+            "model_path": "fixtures/hidden_group/model.joblib",
+            "eval_data_path": "fixtures/hidden_group/eval.csv",
+            "metadata_path": "fixtures/hidden_group/metadata.json",
+            "train_row_hashes_path": "fixtures/hidden_group/train_row_hashes.txt",
+            "suggested_profile": "extended_hidden_groups",
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "hidden_group_null",
+            "description": "A comparison model built the same way, with no failing group.",
+            "model_path": "fixtures/hidden_group_null/model.joblib",
+            "eval_data_path": "fixtures/hidden_group_null/eval.csv",
+            "metadata_path": "fixtures/hidden_group_null/metadata.json",
+            "train_row_hashes_path": "fixtures/hidden_group_null/train_row_hashes.txt",
+            "suggested_profile": "extended_hidden_groups",
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "unsafe_model",
+            "description": "A model file that runs code when it is loaded (a safety demonstration).",
+            "model_path": "fixtures/unsafe_model/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/unsafe_model/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        },
+        {
+            "id": "unreviewed_model",
+            "description": "Refers to custom code that the safety scan does not recognise.",
+            "model_path": "fixtures/unreviewed_model/model.joblib",
+            "eval_data_path": "data/eval.csv",
+            "metadata_path": "fixtures/unreviewed_model/metadata.json",
+            "train_row_hashes_path": "data/train_row_hashes.txt",
+            "suggested_profile": null,
+            "available": true,
+            "unavailable_reason": null
+        }
+    ]
+}

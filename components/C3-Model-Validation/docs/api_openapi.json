@@ -8,6 +8,150 @@
         "title": "ActionMode",
         "type": "string"
       },
+      "Body_upload_v1_uploads_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "model",
+              "eval",
+              "metadata",
+              "hashes"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "file"
+        ],
+        "title": "Body_upload_v1_uploads_post",
+        "type": "object"
+      },
+      "CandidateInfo": {
+        "additionalProperties": false,
+        "description": "A model the server offers, with the files that belong to it, exactly as declared in the catalogue.",
+        "properties": {
+          "available": {
+            "description": "false if a declared file is missing or outside the artifact root",
+            "title": "Available",
+            "type": "boolean"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "eval_data_path": {
+            "title": "Eval Data Path",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Path"
+          },
+          "model_path": {
+            "description": "relative to the artifact root",
+            "title": "Model Path",
+            "type": "string"
+          },
+          "suggested_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "a profile the catalogue recommends for it",
+            "title": "Suggested Profile"
+          },
+          "train_row_hashes_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Train Row Hashes Path"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unavailable Reason"
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "model_path",
+          "eval_data_path",
+          "metadata_path",
+          "train_row_hashes_path",
+          "available"
+        ],
+        "title": "CandidateInfo",
+        "type": "object"
+      },
+      "CandidateList": {
+        "additionalProperties": false,
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/CandidateInfo"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "catalogue_found": {
+            "description": "false if the server has no candidates.yaml",
+            "title": "Catalogue Found",
+            "type": "boolean"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "why the catalogue could not be used, if it is malformed",
+            "title": "Error"
+          }
+        },
+        "required": [
+          "catalogue_found",
+          "candidates"
+        ],
+        "title": "CandidateList",
+        "type": "object"
+      },
       "CandidateSummary": {
         "additionalProperties": false,
         "properties": {
@@ -64,6 +208,40 @@
           "model_path"
         ],
         "title": "CandidateSummary",
+        "type": "object"
+      },
+      "Capabilities": {
+        "additionalProperties": false,
+        "description": "What this server will do, so a client can show unavailable features instead of failing.",
+        "properties": {
+          "default_profile": {
+            "title": "Default Profile",
+            "type": "string"
+          },
+          "gate_version": {
+            "title": "Gate Version",
+            "type": "string"
+          },
+          "unscanned_profiles_allowed": {
+            "title": "Unscanned Profiles Allowed",
+            "type": "boolean"
+          },
+          "upload_limits": {
+            "$ref": "#/components/schemas/UploadLimits"
+          },
+          "uploads_enabled": {
+            "title": "Uploads Enabled",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "gate_version",
+          "uploads_enabled",
+          "upload_limits",
+          "unscanned_profiles_allowed",
+          "default_profile"
+        ],
+        "title": "Capabilities",
         "type": "object"
       },
       "CheckContribution": {
@@ -495,6 +673,14 @@
             "title": "Enabled Checks",
             "type": "integer"
           },
+          "highlights": {
+            "description": "what sets it apart: scanning, extra checks, subgroup detection",
+            "items": {
+              "type": "string"
+            },
+            "title": "Highlights",
+            "type": "array"
+          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -503,6 +689,38 @@
             "description": "whether the model file is scanned before it is loaded",
             "title": "Scans Model Files",
             "type": "boolean"
+          },
+          "strictness": {
+            "description": "how demanding it is: derived from its promotion threshold and how it treats missing evidence",
+            "enum": [
+              "lenient",
+              "standard",
+              "strict"
+            ],
+            "title": "Strictness",
+            "type": "string"
+          },
+          "strictness_text": {
+            "description": "the thresholds and rules behind the strictness, in simple words",
+            "title": "Strictness Text",
+            "type": "string"
+          },
+          "summary": {
+            "description": "what the profile does, in simple words",
+            "title": "Summary",
+            "type": "string"
+          },
+          "unavailable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "why this server will not run it (when allowed is false)",
+            "title": "Unavailable Reason"
           },
           "weights": {
             "additionalProperties": {
@@ -518,7 +736,11 @@
           "enabled_checks",
           "scans_model_files",
           "allowed",
-          "weights"
+          "weights",
+          "summary",
+          "highlights",
+          "strictness",
+          "strictness_text"
         ],
         "title": "ProfileInfo",
         "type": "object"
@@ -808,6 +1030,114 @@
         "title": "ScoreCard",
         "type": "object"
       },
+      "StudyData": {
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "generated_at_utc": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At Utc"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "data"
+        ],
+        "title": "StudyData",
+        "type": "object"
+      },
+      "StudyInfo": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "generated_at_utc": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generated At Utc"
+          },
+          "has_data": {
+            "description": "a machine-readable result exists",
+            "title": "Has Data",
+            "type": "boolean"
+          },
+          "has_report": {
+            "description": "a Markdown report exists",
+            "title": "Has Report",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "script": {
+            "description": "the helper script that generates it (the API never runs it)",
+            "title": "Script",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "has_data",
+          "has_report",
+          "script"
+        ],
+        "title": "StudyInfo",
+        "type": "object"
+      },
+      "StudyList": {
+        "additionalProperties": false,
+        "properties": {
+          "studies": {
+            "items": {
+              "$ref": "#/components/schemas/StudyInfo"
+            },
+            "title": "Studies",
+            "type": "array"
+          }
+        },
+        "required": [
+          "studies"
+        ],
+        "title": "StudyList",
+        "type": "object"
+      },
       "TriggeredRule": {
         "additionalProperties": false,
         "properties": {
@@ -852,6 +1182,77 @@
           "reason"
         ],
         "title": "TriggeredRule",
+        "type": "object"
+      },
+      "UploadInfo": {
+        "additionalProperties": false,
+        "description": "A stored upload. `path` is relative to the artifact root, ready for a validation request.",
+        "properties": {
+          "bytes": {
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "model",
+              "eval",
+              "metadata",
+              "hashes"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "upload_id": {
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "kind",
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "title": "UploadInfo",
+        "type": "object"
+      },
+      "UploadLimits": {
+        "additionalProperties": false,
+        "properties": {
+          "extensions": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "description": "accepted file extensions per kind",
+            "title": "Extensions",
+            "type": "object"
+          },
+          "max_bytes": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "largest accepted file per kind",
+            "title": "Max Bytes",
+            "type": "object"
+          }
+        },
+        "required": [
+          "max_bytes",
+          "extensions"
+        ],
+        "title": "UploadLimits",
         "type": "object"
       },
       "ValidationError": {
@@ -1273,6 +1674,60 @@
         ]
       }
     },
+    "/v1/candidates": {
+      "get": {
+        "description": "The models this server offers, each with the evaluation data and metadata that belong to it.\n\nRead from an explicit catalogue (candidates.yaml); no association is ever inferred from file\nnames. A validation request names the paths returned here.",
+        "operationId": "list_candidates_v1_candidates_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Candidates",
+        "tags": [
+          "configuration"
+        ]
+      }
+    },
+    "/v1/capabilities": {
+      "get": {
+        "description": "What this server allows, so a client can show a feature as unavailable instead of failing.",
+        "operationId": "capabilities_v1_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Capabilities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Capabilities",
+        "tags": [
+          "configuration"
+        ]
+      }
+    },
     "/v1/checks": {
       "get": {
         "operationId": "list_checks_v1_checks_get",
@@ -1326,6 +1781,180 @@
         "summary": "List Profiles",
         "tags": [
           "configuration"
+        ]
+      }
+    },
+    "/v1/studies": {
+      "get": {
+        "description": "The study reports (baseline comparison, sensitivity analysis, ...) and whether each exists.",
+        "operationId": "list_studies_v1_studies_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Studies",
+        "tags": [
+          "studies"
+        ]
+      }
+    },
+    "/v1/studies/{study_id}": {
+      "get": {
+        "description": "The machine-readable result of a study, exactly as its script wrote it.",
+        "operationId": "get_study_v1_studies__study_id__get",
+        "parameters": [
+          {
+            "description": "one of the ids listed by GET /v1/studies",
+            "in": "path",
+            "name": "study_id",
+            "required": true,
+            "schema": {
+              "description": "one of the ids listed by GET /v1/studies",
+              "pattern": "^[a-z_]{1,40}$",
+              "title": "Study Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudyData"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Study",
+        "tags": [
+          "studies"
+        ]
+      }
+    },
+    "/v1/studies/{study_id}/report": {
+      "get": {
+        "operationId": "get_study_report_v1_studies__study_id__report_get",
+        "parameters": [
+          {
+            "description": "one of the ids listed by GET /v1/studies",
+            "in": "path",
+            "name": "study_id",
+            "required": true,
+            "schema": {
+              "description": "one of the ids listed by GET /v1/studies",
+              "pattern": "^[a-z_]{1,40}$",
+              "title": "Study Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Get Study Report",
+        "tags": [
+          "studies"
+        ]
+      }
+    },
+    "/v1/uploads": {
+      "post": {
+        "description": "Store one file under the artifact root, then name it in a validation request.\n\nDisabled unless the operator sets MQVG_ALLOW_UPLOADS. A model file is code: it is still scanned\nbefore it is loaded, and only scanning profiles run, exactly as for any other model.",
+        "operationId": "upload_v1_uploads_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_v1_uploads_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "description": "uploads are disabled on this server"
+          },
+          "413": {
+            "description": "the file is larger than the limit"
+          },
+          "422": {
+            "description": "unknown kind or a file type that kind does not accept"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Upload",
+        "tags": [
+          "uploads"
         ]
       }
     },

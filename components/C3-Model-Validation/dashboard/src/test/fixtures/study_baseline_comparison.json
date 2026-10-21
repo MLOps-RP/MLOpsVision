@@ -1,0 +1,247 @@
+{
+  "study": "baseline_comparison",
+  "generated_at_utc": "2026-10-20T17:18:34+00:00",
+  "gates": [
+    "F1 only",
+    "metrics only",
+    "full gate (default)",
+    "full gate (hidden_groups)"
+  ],
+  "summary": {
+    "F1 only": {
+      "caught": 1,
+      "defects": 8,
+      "false_alarms": 0,
+      "clean": 2
+    },
+    "metrics only": {
+      "caught": 5,
+      "defects": 8,
+      "false_alarms": 1,
+      "clean": 2
+    },
+    "full gate (default)": {
+      "caught": 7,
+      "defects": 8,
+      "false_alarms": 0,
+      "clean": 2
+    },
+    "full gate (hidden_groups)": {
+      "caught": 8,
+      "defects": 8,
+      "false_alarms": 0,
+      "clean": 2
+    }
+  },
+  "models": [
+    {
+      "name": "good",
+      "truth": "clean",
+      "f1": 0.6611295681063123,
+      "metrics_not_passing": [],
+      "injected_defect": "none",
+      "decisions": {
+        "full gate (default)": "PROMOTE",
+        "full gate (hidden_groups)": "PROMOTE"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": true,
+        "full gate (default)": true,
+        "full gate (hidden_groups)": true
+      }
+    },
+    {
+      "name": "leaky",
+      "truth": "defect",
+      "f1": 0.9540351620419404,
+      "metrics_not_passing": [],
+      "injected_defect": "Extra feature prior_high_income_flag equals the true label, flipped for 3% of rows, in both train and eval.",
+      "decisions": {
+        "full gate (default)": "ROLLBACK",
+        "full gate (hidden_groups)": "ROLLBACK"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": true,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "overfit",
+      "truth": "defect",
+      "f1": 0.6174354633939906,
+      "metrics_not_passing": [
+        "precision",
+        "roc_auc"
+      ],
+      "injected_defect": "Unconstrained decision tree (max_depth=None).",
+      "decisions": {
+        "full gate (default)": "HOLD",
+        "full gate (hidden_groups)": "HOLD"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": false,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "biased",
+      "truth": "defect",
+      "f1": 0.6112088464438302,
+      "metrics_not_passing": [
+        "recall"
+      ],
+      "injected_defect": "95% of positive training labels for Female rows relabelled negative; sex and race used as model features. The fixture metadata does not disclose this, as a real producer's metadata would not.",
+      "decisions": {
+        "full gate (default)": "ROLLBACK",
+        "full gate (hidden_groups)": "ROLLBACK"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": false,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "miscalibrated",
+      "truth": "defect",
+      "f1": 0.6254946297343132,
+      "metrics_not_passing": [
+        "precision"
+      ],
+      "injected_defect": "Positive class weighted 8x, inflating predicted probabilities.",
+      "decisions": {
+        "full gate (default)": "HOLD",
+        "full gate (hidden_groups)": "HOLD"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": false,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "slow",
+      "truth": "excluded",
+      "f1": 0.6645241038318913,
+      "metrics_not_passing": [],
+      "injected_defect": "Random forest, 1000 trees, depth 14 (113 MB artifact).",
+      "decisions": {
+        "full gate (default)": "HOLD",
+        "full gate (hidden_groups)": "HOLD"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": true,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "corrupt",
+      "truth": "defect",
+      "f1": null,
+      "metrics_not_passing": [
+        "f1",
+        "precision",
+        "recall",
+        "roc_auc"
+      ],
+      "injected_defect": "Good model file truncated to 40% of its bytes.",
+      "decisions": {
+        "full gate (default)": "ROLLBACK",
+        "full gate (hidden_groups)": "ROLLBACK"
+      },
+      "promoted": {
+        "F1 only": false,
+        "metrics only": false,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "good_incomplete_metadata",
+      "truth": "defect",
+      "f1": 0.6611295681063123,
+      "metrics_not_passing": [],
+      "injected_defect": "Good model, but 11 metadata fields removed (seed, split, data hash, hyperparameters, versions, code commit, training metrics, ...).",
+      "decisions": {
+        "full gate (default)": "HOLD",
+        "full gate (hidden_groups)": "HOLD"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": true,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "good_no_sensitive",
+      "truth": "defect",
+      "f1": 0.6611295681063123,
+      "metrics_not_passing": [],
+      "injected_defect": "Evaluation data without the sex and race columns.",
+      "decisions": {
+        "full gate (default)": "HOLD",
+        "full gate (hidden_groups)": "HOLD"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": true,
+        "full gate (default)": false,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "hidden_group",
+      "truth": "defect",
+      "f1": 0.6951180084060782,
+      "metrics_not_passing": [
+        "roc_auc"
+      ],
+      "injected_defect": "Labels are flipped with probability 0.8 where segment = d AND tenure_years > 6 (about 9% of rows), in training and evaluation data. A logistic regression cannot represent the interaction, so it fails there (about 61% error inside, 28% outside). No sensitive column describes the group.",
+      "decisions": {
+        "full gate (default)": "PROMOTE",
+        "full gate (hidden_groups)": "HOLD"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": false,
+        "full gate (default)": true,
+        "full gate (hidden_groups)": false
+      }
+    },
+    {
+      "name": "hidden_group_null",
+      "truth": "clean",
+      "f1": 0.7325689494886892,
+      "metrics_not_passing": [
+        "roc_auc"
+      ],
+      "injected_defect": "none (same data process, no planted region)",
+      "decisions": {
+        "full gate (default)": "PROMOTE",
+        "full gate (hidden_groups)": "PROMOTE"
+      },
+      "promoted": {
+        "F1 only": true,
+        "metrics only": false,
+        "full gate (default)": true,
+        "full gate (hidden_groups)": true
+      }
+    }
+  ],
+  "caveats": [
+    "The sample models were built by the project author, so this measures the gate against defects it was designed for, not defects found in practice.",
+    "There are only two clean models, so the false-alarm figures are weak evidence.",
+    "The metrics-only gate also stops models whose precision, recall or ROC-AUC merely warns on this dataset; its stopped count overstates what it detects.",
+    "A baseline that cannot compute its metrics counts as not promoted."
+  ]
+}

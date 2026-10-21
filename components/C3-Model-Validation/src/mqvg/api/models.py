@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Annotated
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints
 
@@ -85,6 +85,13 @@ class ProfileInfo(_Model):
         description="whether the model file is scanned before it is loaded")
     allowed: bool = Field(description="whether this server will run the profile")
     weights: dict[str, float]
+    # Plain-language guide, generated from the profile's own configuration (never from its name).
+    summary: str = Field(description="what the profile does, in simple words")
+    highlights: list[str] = Field(description="what sets it apart: scanning, extra checks, subgroup detection")
+    strictness: Literal["lenient", "standard", "strict"] = Field(
+        description="how demanding it is: derived from its promotion threshold and how it treats missing evidence")
+    strictness_text: str = Field(description="the thresholds and rules behind the strictness, in simple words")
+    unavailable_reason: str | None = Field(default=None, description="why this server will not run it (when allowed is false)")
 
 
 class ProfileList(_Model):
@@ -98,6 +105,72 @@ class CheckInfo(_Model):
     direction: str
     unit: str
     description: str
+
+
+UploadKind = Literal["model", "eval", "metadata", "hashes"]
+
+
+class UploadInfo(_Model):
+    """A stored upload. `path` is relative to the artifact root, ready for a validation request."""
+    upload_id: str
+    kind: UploadKind
+    path: str
+    bytes: int
+    sha256: str
+
+
+class UploadLimits(_Model):
+    max_bytes: dict[str, int] = Field(description="largest accepted file per kind")
+    extensions: dict[str, list[str]] = Field(description="accepted file extensions per kind")
+
+
+class Capabilities(_Model):
+    """What this server will do, so a client can show unavailable features instead of failing."""
+    gate_version: str
+    uploads_enabled: bool
+    upload_limits: UploadLimits
+    unscanned_profiles_allowed: bool
+    default_profile: str
+
+
+class StudyInfo(_Model):
+    id: str
+    title: str
+    description: str
+    has_data: bool = Field(description="a machine-readable result exists")
+    has_report: bool = Field(description="a Markdown report exists")
+    generated_at_utc: datetime | None = None
+    script: str = Field(description="the helper script that generates it (the API never runs it)")
+
+
+class StudyList(_Model):
+    studies: list[StudyInfo]
+
+
+class StudyData(_Model):
+    id: str
+    title: str
+    generated_at_utc: datetime | None = None
+    data: dict[str, Any]
+
+
+class CandidateInfo(_Model):
+    """A model the server offers, with the files that belong to it, exactly as declared in the catalogue."""
+    id: str
+    description: str
+    model_path: str = Field(description="relative to the artifact root")
+    eval_data_path: str
+    metadata_path: str | None
+    train_row_hashes_path: str | None
+    suggested_profile: str | None = Field(default=None, description="a profile the catalogue recommends for it")
+    available: bool = Field(description="false if a declared file is missing or outside the artifact root")
+    unavailable_reason: str | None = None
+
+
+class CandidateList(_Model):
+    catalogue_found: bool = Field(description="false if the server has no candidates.yaml")
+    error: str | None = Field(default=None, description="why the catalogue could not be used, if it is malformed")
+    candidates: list[CandidateInfo]
 
 
 class Health(_Model):

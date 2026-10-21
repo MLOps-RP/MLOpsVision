@@ -61,10 +61,18 @@ print(out.decision, out.result.scorecard.mqs)
 **Security:** loading a joblib/pickle file executes code stored in it. Only
 validate models from trusted sources.
 
+### Dashboard
+
+A React + Vite + Tailwind + Recharts dashboard for the API lives in `dashboard/`: dashboard, validate (pick a registered model and an
+explained profile), results, history, hidden failure analysis, and reports
+with the check catalogue. `cd dashboard; npm install; npm run dev`, then enter the API key. See `dashboard/README.md`.
+
 ### HTTP API
 
 ```
-$env:MQVG_ARTIFACT_ROOT = "C:\path	ortifacts"; $env:MQVG_API_KEY = "change-me"
+.\.venv\Scripts\Activate.ps1                          # use the project's virtual environment (where mqvg is installed)
+$env:MQVG_ARTIFACT_ROOT = (Get-Location).Path       # a real folder: the one the API may read files from
+$env:MQVG_API_KEY = "change-me"
 python -m mqvg.api                                    # http://127.0.0.1:8000/docs
 ```
 

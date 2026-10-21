@@ -353,7 +353,8 @@ def test_the_api_has_no_deployment_surface(client):
     routes = {(m, r.path) for r in client.app.routes if hasattr(r, "methods") for m in r.methods
               if r.path.startswith(("/v1", "/health"))}
     assert {m for m, _ in routes} == {"GET", "POST"}
-    assert [p for m, p in routes if m == "POST"] == ["/v1/validations"]
+    # Validation, and (disabled unless the operator opts in) file upload. Nothing else can be POSTed.
+    assert sorted(p for m, p in routes if m == "POST") == ["/v1/uploads", "/v1/validations"]
     assert not any(word in p for _, p in routes for word in ("deploy", "promote", "rollback", "rollout"))
 
 

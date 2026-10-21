@@ -1,0 +1,137 @@
+{
+    "default_profile": "extended",
+    "profiles": [
+        {
+            "name": "default",
+            "description": "Balanced profile used for the standalone prototype.",
+            "enabled_checks": 21,
+            "scans_model_files": false,
+            "allowed": false,
+            "weights": {
+                "training_validity": 0.3,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.2
+            },
+            "summary": "Runs 21 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [],
+            "strictness": "standard",
+            "strictness_text": "Recommends promotion at a score of 75 or more and rollback below 50. 4 critical rules force a rollback whatever the score, and 4 checks must pass before promotion. A check that could not run is flagged and never counted as a pass.",
+            "unavailable_reason": "It would load the model file without scanning it first. Loading a model runs the code inside it, so this server only runs profiles that scan the file before loading it."
+        },
+        {
+            "name": "extended",
+            "description": "Default checks plus conflicting labels, training duplicates, model-file safety and CPU time.",
+            "enabled_checks": 25,
+            "scans_model_files": true,
+            "allowed": true,
+            "weights": {
+                "training_validity": 0.3,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.2
+            },
+            "summary": "Runs 25 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [
+                "Scans the model file before loading it",
+                "Also checks conflicting labels in the evaluation data, repeated training rows and how much CPU the model uses"
+            ],
+            "strictness": "standard",
+            "strictness_text": "Recommends promotion at a score of 75 or more and rollback below 50. 5 critical rules force a rollback whatever the score, and 6 checks must pass before promotion. A check that could not run is flagged and never counted as a pass.",
+            "unavailable_reason": null
+        },
+        {
+            "name": "extended_hidden_groups",
+            "description": "Extended checks plus hidden failure group detection (a confirmed group gives HOLD).",
+            "enabled_checks": 26,
+            "scans_model_files": true,
+            "allowed": true,
+            "weights": {
+                "training_validity": 0.3,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.2
+            },
+            "summary": "Runs 26 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [
+                "Scans the model file before loading it",
+                "Looks for hidden failing groups of rows (a failing group puts the model on hold)",
+                "Also checks conflicting labels in the evaluation data, repeated training rows and how much CPU the model uses"
+            ],
+            "strictness": "standard",
+            "strictness_text": "Recommends promotion at a score of 75 or more and rollback below 50. 5 critical rules force a rollback whatever the score, and 6 checks must pass before promotion. A check that could not run is flagged and never counted as a pass.",
+            "unavailable_reason": null
+        },
+        {
+            "name": "hidden_groups",
+            "description": "Default profile with Hidden Failure Group Detection; a confirmed group puts the model on HOLD.",
+            "enabled_checks": 22,
+            "scans_model_files": false,
+            "allowed": false,
+            "weights": {
+                "training_validity": 0.3,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.2
+            },
+            "summary": "Runs 22 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [
+                "Looks for hidden failing groups of rows (a failing group puts the model on hold)"
+            ],
+            "strictness": "standard",
+            "strictness_text": "Recommends promotion at a score of 75 or more and rollback below 50. 4 critical rules force a rollback whatever the score, and 4 checks must pass before promotion. A check that could not run is flagged and never counted as a pass.",
+            "unavailable_reason": "It would load the model file without scanning it first. Loading a model runs the code inside it, so this server only runs profiles that scan the file before loading it."
+        },
+        {
+            "name": "hidden_groups_critical",
+            "description": "A severe hidden failure group is a critical failure (ROLLBACK recommendation).",
+            "enabled_checks": 22,
+            "scans_model_files": false,
+            "allowed": false,
+            "weights": {
+                "training_validity": 0.3,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.2
+            },
+            "summary": "Runs 22 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [
+                "Looks for hidden failing groups of rows (a severe failing group can trigger a rollback recommendation)"
+            ],
+            "strictness": "standard",
+            "strictness_text": "Recommends promotion at a score of 75 or more and rollback below 50. 4 critical rules force a rollback whatever the score, and 4 checks must pass before promotion. A check that could not run is flagged and never counted as a pass.",
+            "unavailable_reason": "It would load the model file without scanning it first. Loading a model runs the code inside it, so this server only runs profiles that scan the file before loading it."
+        },
+        {
+            "name": "hidden_groups_score_only",
+            "description": "Hidden Failure Group Detection affects the score only, never the decision.",
+            "enabled_checks": 22,
+            "scans_model_files": false,
+            "allowed": false,
+            "weights": {
+                "training_validity": 0.3,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.2
+            },
+            "summary": "Runs 22 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [
+                "Looks for hidden failing groups of rows (a failing group only lowers the score)"
+            ],
+            "strictness": "standard",
+            "strictness_text": "Recommends promotion at a score of 75 or more and rollback below 50. 4 critical rules force a rollback whatever the score, and 4 checks must pass before promotion. A check that could not run is flagged and never counted as a pass.",
+            "unavailable_reason": "It would load the model file without scanning it first. Loading a model runs the code inside it, so this server only runs profiles that scan the file before loading it."
+        },
+        {
+            "name": "strict",
+            "description": "Tighter thresholds, stricter evidence, penalized missing checks.",
+            "enabled_checks": 21,
+            "scans_model_files": false,
+            "allowed": false,
+            "weights": {
+                "training_validity": 0.35,
+                "model_behaviour": 0.5,
+                "operational_readiness": 0.15
+            },
+            "summary": "Runs 21 checks of training quality, model behaviour and operational readiness, then recommends promote, hold or rollback.",
+            "highlights": [],
+            "strictness": "strict",
+            "strictness_text": "Recommends promotion at a score of 85 or more and rollback below 60. 6 critical rules force a rollback whatever the score, and 7 checks must pass before promotion. A check that could not run counts as zero.",
+            "unavailable_reason": "It would load the model file without scanning it first. Loading a model runs the code inside it, so this server only runs profiles that scan the file before loading it."
+        }
+    ]
+}

@@ -1,0 +1,123 @@
+# The models this server offers for validation, and exactly which files belong to each.
+#
+# Every association is written out here. The API never guesses one from file names, folders or
+# conventions; it only serves what is declared. All paths are relative to the artifact root
+# (MQVG_ARTIFACT_ROOT). `metadata` and `train_row_hashes` must be present in every entry; use
+# `null` only when a candidate really has none (a missing key is an error, not "none").
+#
+# These associations come from the fixture manifests (fixtures/manifest.yaml,
+# fixtures/hidden_groups_manifest.yaml, fixtures/extended_manifest.yaml) and from the
+# `train_row_hashes_file` each metadata.json declares; tests/test_candidates.py checks that they
+# still agree. `suggested_profile` is optional: a profile name the card recommends if the server
+# allows it.
+#
+# Several entries share one model file (fixtures/good/model.joblib): they test the SAME model with
+# different data or metadata, which is the point of those entries.
+
+candidates:
+  - id: good
+    description: A well-behaved baseline classifier on the Adult income data.
+    model: fixtures/good/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/good/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: leaky
+    description: Trained with an extra column that gives away the answer (target leakage).
+    model: fixtures/leaky/model.joblib
+    eval_data: fixtures/leaky/eval.csv
+    metadata: fixtures/leaky/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: overfit
+    description: A very deep decision tree that memorises its training data.
+    model: fixtures/overfit/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/overfit/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: biased
+    description: Trained on labels that systematically disadvantage one group.
+    model: fixtures/biased/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/biased/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: miscalibrated
+    description: Its confidence scores are unreliable, even though its accuracy looks fine.
+    model: fixtures/miscalibrated/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/miscalibrated/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: slow
+    description: A very large random forest that is heavy and slow to run.
+    model: fixtures/slow/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/slow/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: corrupt
+    description: A truncated model file that cannot be loaded.
+    model: fixtures/corrupt/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/corrupt/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: good_incomplete_metadata
+    description: The good model, but most of its training details are missing from the metadata.
+    model: fixtures/good/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/good_incomplete_metadata/metadata.json
+    train_row_hashes: null            # this metadata declares no training-hash file
+
+  - id: good_no_sensitive
+    description: The good model, checked with evaluation data that lacks the sex and race columns.
+    model: fixtures/good/model.joblib
+    eval_data: fixtures/good_no_sensitive/eval.csv
+    metadata: fixtures/good_no_sensitive/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: label_conflicts
+    description: The good model, checked with evaluation data where identical rows carry opposite labels.
+    model: fixtures/good/model.joblib
+    eval_data: fixtures/label_conflicts/eval.csv
+    metadata: fixtures/label_conflicts/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: duplicate_training
+    description: The good model, whose training data contains many repeated rows.
+    model: fixtures/good/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/duplicate_training/metadata.json
+    train_row_hashes: fixtures/duplicate_training/train_row_hashes.txt
+
+  - id: hidden_group
+    description: Looks healthy overall but fails badly for one small group of rows.
+    model: fixtures/hidden_group/model.joblib
+    eval_data: fixtures/hidden_group/eval.csv
+    metadata: fixtures/hidden_group/metadata.json
+    train_row_hashes: fixtures/hidden_group/train_row_hashes.txt
+    suggested_profile: extended_hidden_groups
+
+  - id: hidden_group_null
+    description: A comparison model built the same way, with no failing group.
+    model: fixtures/hidden_group_null/model.joblib
+    eval_data: fixtures/hidden_group_null/eval.csv
+    metadata: fixtures/hidden_group_null/metadata.json
+    train_row_hashes: fixtures/hidden_group_null/train_row_hashes.txt
+    suggested_profile: extended_hidden_groups
+
+  - id: unsafe_model
+    description: A model file that runs code when it is loaded (a safety demonstration).
+    model: fixtures/unsafe_model/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/unsafe_model/metadata.json
+    train_row_hashes: data/train_row_hashes.txt
+
+  - id: unreviewed_model
+    description: Refers to custom code that the safety scan does not recognise.
+    model: fixtures/unreviewed_model/model.joblib
+    eval_data: data/eval.csv
+    metadata: fixtures/unreviewed_model/metadata.json
+    train_row_hashes: data/train_row_hashes.txt

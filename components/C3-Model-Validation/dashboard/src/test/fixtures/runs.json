@@ -1,0 +1,84 @@
+{
+ "runs": [
+  {
+   "run_id": "fecb116d607a4e69b4f895c03e678a7e",
+   "candidate_id": "good_no_sensitive",
+   "profile": "extended",
+   "decision": "HOLD",
+   "mqs": null,
+   "created_at_utc": "2026-10-20T06:47:55.676063Z"
+  },
+  {
+   "run_id": "0730f08e01f7426ab8b6644e9f1303ef",
+   "candidate_id": "unsafe_model",
+   "profile": "extended",
+   "decision": "ROLLBACK",
+   "mqs": null,
+   "created_at_utc": "2026-10-20T06:47:54.164123Z"
+  },
+  {
+   "run_id": "2c502f5f1a2a43f18ad45c3e92aa4441",
+   "candidate_id": "hidden_group_null",
+   "profile": "extended_hidden_groups",
+   "decision": "PROMOTE",
+   "mqs": 95.55427647157812,
+   "created_at_utc": "2026-10-20T06:47:53.628336Z"
+  },
+  {
+   "run_id": "7ec18704145b432b948f330d87444d02",
+   "candidate_id": "hidden_group",
+   "profile": "extended_hidden_groups",
+   "decision": "HOLD",
+   "mqs": 88.28858555565068,
+   "created_at_utc": "2026-10-20T06:47:52.390548Z"
+  },
+  {
+   "run_id": "2a9c7673357743cfb94614f0ff3aacb7",
+   "candidate_id": "corrupt",
+   "profile": "extended",
+   "decision": "ROLLBACK",
+   "mqs": null,
+   "created_at_utc": "2026-10-20T06:47:50.979202Z"
+  },
+  {
+   "run_id": "ebc18011b5b044be930ca982dde0249e",
+   "candidate_id": "miscalibrated",
+   "profile": "extended",
+   "decision": "HOLD",
+   "mqs": 80.31972889387848,
+   "created_at_utc": "2026-10-20T06:47:50.409778Z"
+  },
+  {
+   "run_id": "e8b4f7dfea044dfb820024ef62bc0477",
+   "candidate_id": "biased",
+   "profile": "extended",
+   "decision": "ROLLBACK",
+   "mqs": 75.48960879833683,
+   "created_at_utc": "2026-10-20T06:47:49.231134Z"
+  },
+  {
+   "run_id": "cc8d7816443a429a873a37974d1021ee",
+   "candidate_id": "overfit",
+   "profile": "extended",
+   "decision": "HOLD",
+   "mqs": 72.99111035714813,
+   "created_at_utc": "2026-10-20T06:47:48.009513Z"
+  },
+  {
+   "run_id": "bacacee0deb44c22ba9b7d96fb274362",
+   "candidate_id": "leaky",
+   "profile": "extended",
+   "decision": "ROLLBACK",
+   "mqs": 85.68983928530707,
+   "created_at_utc": "2026-10-20T06:47:46.454475Z"
+  },
+  {
+   "run_id": "b5de76cda06f4fafb6f7d80f8d46df6b",
+   "candidate_id": "good",
+   "profile": "extended",
+   "decision": "PROMOTE",
+   "mqs": 86.8839507761005,
+   "created_at_utc": "2026-10-20T06:47:44.929177Z"
+  }
+ ]
+}

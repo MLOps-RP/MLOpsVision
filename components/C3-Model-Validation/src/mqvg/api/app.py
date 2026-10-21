@@ -1,6 +1,7 @@
 """The FastAPI application. See `mqvg.api` for the security model and `docs/api.md`."""
 from __future__ import annotations
 
+import hashlib
 import logging
 import secrets
 import threading
@@ -9,14 +10,18 @@ from collections import Counter
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, Path as PathParam, Query, Response
+from fastapi import (
+    Depends, FastAPI, File, Form, HTTPException, Path as PathParam, Query, Request, Response, UploadFile,
+)
 from fastapi.responses import PlainTextResponse
 from fastapi.security import APIKeyHeader
 
 from mqvg import __version__
+from mqvg.api import profile_guide, studies as study_store
+from mqvg.api.candidates import load_catalogue
 from mqvg.api.models import (
-    CheckInfo, Health, ProfileInfo, ProfileList, RuleSummary, RunEntry, RunList,
-    ValidationRequest, ValidationSummary,
+    Capabilities, CandidateInfo, CandidateList, CheckInfo, Health, ProfileInfo, ProfileList, RuleSummary, RunEntry, RunList, StudyData,
+    StudyInfo, StudyList, UploadInfo, UploadKind, UploadLimits, ValidationRequest, ValidationSummary,
 )
 from mqvg.api.settings import Settings, SettingsError
 from mqvg.catalogue import CATALOGUE
@@ -27,8 +32,19 @@ from mqvg.workflow import validate_and_report
 log = logging.getLogger("mqvg.api")
 SAFETY_CHECK = "operational.model_file_safety"
 RUN_ID = r"^[0-9a-f]{32}$"
+STUDY_ID = r"^[a-z_]{1,40}$"
+MB = 1024 * 1024
+CHUNK = MB
+# What an upload may be called. The stored name is chosen by the server (kind + a validated extension),
+# never taken from the client.
+UPLOAD_EXTENSIONS: dict[str, list[str]] = {
+    "model": [".joblib", ".pkl", ".pickle"], "eval": [".csv"],
+    "metadata": [".json", ".yaml", ".yml"], "hashes": [".txt"],
+}
+UPLOAD_CAP_MB = {"metadata": 2, "hashes": 50}      # smaller kinds never need the full limit
 PROFILE_SUFFIX = ".yaml"
 
+StudyIdPath = Annotated[str, PathParam(pattern=STUDY_ID, description="one of the ids listed by GET /v1/studies")]
 RunIdPath = Annotated[str, PathParam(
     pattern=RUN_ID, description="the run_id returned by POST /v1/validations")]
 
@@ -142,12 +158,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except HTTPException:
                 continue
             scans = _scans_files(config)
+            allowed = scans or settings.allow_unscanned_profiles
+            guide = profile_guide.describe(config, scans)
             infos.append(ProfileInfo(
                 name=name, description=config.description,
                 enabled_checks=sum(c.enabled for c in config.checks.values()),
-                scans_model_files=scans, allowed=scans or settings.allow_unscanned_profiles,
-                weights={d.value: w for d, w in config.weights.as_dict().items()}))
+                scans_model_files=scans, allowed=allowed,
+                weights={d.value: w for d, w in config.weights.as_dict().items()},
+                summary=guide.summary, highlights=guide.highlights, strictness=guide.strictness,
+                strictness_text=guide.strictness_text,
+                unavailable_reason=None if allowed else profile_guide.unavailable_reason(scans)))
         return ProfileList(default_profile=settings.default_profile, profiles=infos)
+
+    @app.get("/v1/candidates", response_model=CandidateList, tags=["configuration"],
+             dependencies=[Depends(authenticate)])
+    def list_candidates() -> CandidateList:
+        """The models this server offers, each with the evaluation data and metadata that belong to it.
+
+        Read from an explicit catalogue (candidates.yaml); no association is ever inferred from file
+        names. A validation request names the paths returned here.
+        """
+        path = settings.candidates_file or root / "candidates.yaml"
+        catalogue = load_catalogue(path, root)
+        return CandidateList(
+            catalogue_found=catalogue.found, error=catalogue.error,
+            candidates=[CandidateInfo(**c.model_dump()) for c in catalogue.candidates])
 
     @app.get("/v1/checks", response_model=list[CheckInfo], tags=["configuration"],
              dependencies=[Depends(authenticate)])
@@ -228,5 +263,106 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         """The unified Markdown report."""
         return PlainTextResponse((run_folder(run_id) / "report.md").read_text(encoding="utf-8"),
                                  media_type="text/markdown; charset=utf-8")
+
+    # -------------------------------------------------- capabilities, uploads
+    def upload_limits() -> UploadLimits:
+        top = settings.upload_max_mb * MB
+        return UploadLimits(
+            max_bytes={k: min(top, UPLOAD_CAP_MB.get(k, settings.upload_max_mb) * MB) for k in UPLOAD_EXTENSIONS},
+            extensions=UPLOAD_EXTENSIONS)
+
+    @app.get("/v1/capabilities", response_model=Capabilities, tags=["configuration"],
+             dependencies=[Depends(authenticate)])
+    def capabilities() -> Capabilities:
+        """What this server allows, so a client can show a feature as unavailable instead of failing."""
+        return Capabilities(gate_version=__version__, uploads_enabled=settings.allow_uploads,
+                            upload_limits=upload_limits(),
+                            unscanned_profiles_allowed=settings.allow_unscanned_profiles,
+                            default_profile=settings.default_profile)
+
+    @app.post("/v1/uploads", response_model=UploadInfo, status_code=201, tags=["uploads"],
+              dependencies=[Depends(authenticate)],
+              responses={403: {"description": "uploads are disabled on this server"},
+                         413: {"description": "the file is larger than the limit"},
+                         422: {"description": "unknown kind or a file type that kind does not accept"}})
+    def upload(request: Request, kind: Annotated[UploadKind, Form()], file: Annotated[UploadFile, File()]) -> UploadInfo:
+        """Store one file under the artifact root, then name it in a validation request.
+
+        Disabled unless the operator sets MQVG_ALLOW_UPLOADS. A model file is code: it is still scanned
+        before it is loaded, and only scanning profiles run, exactly as for any other model.
+        """
+        if not settings.allow_uploads:
+            raise HTTPException(403, "uploads are disabled on this server (the operator must set MQVG_ALLOW_UPLOADS=true)")
+        name = file.filename or ""
+        if "\x00" in name or len(name) > 255:
+            raise HTTPException(422, "file: invalid file name")
+        suffix = Path(name).suffix.lower()
+        if suffix not in UPLOAD_EXTENSIONS[kind]:
+            raise HTTPException(422, f"file: a '{kind}' upload must end in one of {UPLOAD_EXTENSIONS[kind]}")
+        limit = upload_limits().max_bytes[kind]
+        declared = request.headers.get("content-length")
+        if declared is not None and declared.isdigit() and int(declared) > limit + MB:
+            raise HTTPException(413, f"the file is larger than the {limit // MB} MB limit for '{kind}' uploads")
+        base = root / "uploads"
+        base.mkdir(exist_ok=True)
+        if not base.resolve().is_relative_to(root):
+            raise HTTPException(500, "the upload folder is outside the artifact root")
+        upload_id = uuid.uuid4().hex
+        folder = base / upload_id
+        folder.mkdir()
+        target = folder / f"{kind}{suffix}"
+        digest, size = hashlib.sha256(), 0
+        try:
+            with open(target, "wb") as out:
+                while chunk := file.file.read(CHUNK):
+                    size += len(chunk)
+                    if size > limit:
+                        raise HTTPException(413, f"the file is larger than the {limit // MB} MB limit for '{kind}' uploads")
+                    digest.update(chunk)
+                    out.write(chunk)
+        except BaseException:
+            target.unlink(missing_ok=True)
+            folder.rmdir()
+            raise
+        return UploadInfo(upload_id=upload_id, kind=kind, path=f"uploads/{upload_id}/{target.name}",
+                          bytes=size, sha256=digest.hexdigest())
+
+    # ------------------------------------------------------------- studies
+    docs = settings.docs_dir.resolve()
+
+    def study_spec(study_id: str) -> study_store.StudySpec:
+        spec = study_store.STUDIES.get(study_id)
+        if spec is None:
+            raise HTTPException(404, "no such study")
+        return spec
+
+    @app.get("/v1/studies", response_model=StudyList, tags=["studies"], dependencies=[Depends(authenticate)])
+    def list_studies() -> StudyList:
+        """The study reports (baseline comparison, sensitivity analysis, ...) and whether each exists."""
+        return StudyList(studies=[
+            StudyInfo(id=s.id, title=s.title, description=s.description, script=s.script,
+                      has_data=study_store.load_data(docs, s) is not None,
+                      has_report=study_store.load_report(docs, s) is not None,
+                      generated_at_utc=study_store.generated_at(docs, s))
+            for s in study_store.STUDIES.values()])
+
+    @app.get("/v1/studies/{study_id}", response_model=StudyData, tags=["studies"], dependencies=[Depends(authenticate)])
+    def get_study(study_id: StudyIdPath) -> StudyData:
+        """The machine-readable result of a study, exactly as its script wrote it."""
+        spec = study_spec(study_id)
+        data = study_store.load_data(docs, spec)
+        if data is None:
+            raise HTTPException(404, f"this study has no machine-readable result; generate it with {spec.script}"
+                                if spec.data_file else "this study has no machine-readable result, only a report")
+        return StudyData(id=spec.id, title=spec.title, generated_at_utc=study_store.generated_at(docs, spec), data=data)
+
+    @app.get("/v1/studies/{study_id}/report", response_class=PlainTextResponse, tags=["studies"],
+             dependencies=[Depends(authenticate)])
+    def get_study_report(study_id: StudyIdPath) -> PlainTextResponse:
+        spec = study_spec(study_id)
+        text = study_store.load_report(docs, spec)
+        if text is None:
+            raise HTTPException(404, f"the report has not been generated; run {spec.script}")
+        return PlainTextResponse(text, media_type="text/markdown; charset=utf-8")
 
     return app
