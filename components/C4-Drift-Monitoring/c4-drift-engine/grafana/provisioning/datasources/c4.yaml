@@ -1,0 +1,8 @@
+apiVersion: 1
+datasources:
+  - name: C4 Audit
+    uid: c4-audit
+    type: frser-sqlite-datasource
+    isDefault: true
+    jsonData:
+      path: /c4-data/c4_monitoring.db

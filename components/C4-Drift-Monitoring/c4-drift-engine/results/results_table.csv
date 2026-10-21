@@ -1,0 +1,8 @@
+scenario,expected_diagnosis,c4_diagnosis,diagnosis_correct,expected_action,c4_first_action,action_correct,detection_window,detection_delay,false_alarms_before_drift,c4_retrains,c4_unnecessary_retrains,naive_retrains,naive_unnecessary_retrains,naive_missed,rollback_done
+S0_no_drift,NO_DRIFT,NO_DRIFT,True,NONE,NONE,True,,,0,0,0,5,5,False,False
+S1_covariate_benign,COVARIATE_BENIGN,COVARIATE_BENIGN,True,WARN_ONLY,WARN_ONLY,True,20.0,5.0,0,1,1,5,5,False,False
+S2_covariate_degrading,COVARIATE_DEGRADING,COVARIATE_DEGRADING,True,ROUTE_C1,ROUTE_C1,True,20.0,5.0,0,1,0,5,0,False,False
+S3_concept,CONCEPT_DRIFT,CONCEPT_DRIFT,True,ROUTE_C2,ROUTE_C2,True,20.0,5.0,0,1,0,5,0,False,False
+S4_label_shift,LABEL_SHIFT,LABEL_SHIFT,True,ROUTE_C2,ROUTE_C2,True,19.0,4.0,0,1,0,5,0,False,False
+S5_data_quality,DATA_QUALITY,DATA_QUALITY,True,BLOCK_AND_FLAG,BLOCK_AND_FLAG,True,16.0,1.0,0,0,0,5,5,False,False
+S6_sudden_drop,CONCEPT_DRIFT,CONCEPT_DRIFT,True,ROLLBACK,ROLLBACK,True,18.0,3.0,0,1,0,5,0,False,True

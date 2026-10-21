@@ -1,0 +1,6 @@
+Diagnosis correct: 7/7
+First action correct: 7/7
+False alarms before drift: 0
+Mean detection delay (windows): 3.8
+Unnecessary retrains - naive: 15, C4: 1
+Scenarios naive policy missed: 0

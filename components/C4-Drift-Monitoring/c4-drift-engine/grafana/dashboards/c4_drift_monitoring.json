@@ -1,0 +1,1661 @@
+{
+  "uid": "c4-drift-monitoring",
+  "title": "C4 – Drift Monitoring",
+  "description": "C4 drift diagnosis & remediation engine. 1 window = 1 simulated hour from 2026-01-01 00:00 UTC.",
+  "tags": [
+    "c4",
+    "mlops",
+    "drift"
+  ],
+  "timezone": "utc",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "",
+  "time": {
+    "from": "2025-12-31T23:30:00.000Z",
+    "to": "2026-01-02T15:00:00.000Z"
+  },
+  "timepicker": {},
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "name": "Drift injected (ground truth)",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "c4-audit"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "target": {
+          "refId": "Anno",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT drift_start_time AS time, 'Drift injected: ' || description AS text, 'ground-truth' AS tags FROM scenario_info WHERE scenario = '${scenario}' AND drift_start_time IS NOT NULL",
+          "rawQueryText": "SELECT drift_start_time AS time, 'Drift injected: ' || description AS text, 'ground-truth' AS tags FROM scenario_info WHERE scenario = '${scenario}' AND drift_start_time IS NOT NULL",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      },
+      {
+        "name": "C4 actions",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "c4-audit"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "target": {
+          "refId": "Anno",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, action || ' → ' || target || ' (' || severity_level || ')' || char(10) || reason AS text, action AS tags FROM decisions WHERE scenario = '${scenario}' AND action IN ('ROUTE_C1','ROUTE_C2','ROLLBACK','BLOCK_AND_FLAG')",
+          "rawQueryText": "SELECT time, action || ' → ' || target || ' (' || severity_level || ')' || char(10) || reason AS text, action AS tags FROM decisions WHERE scenario = '${scenario}' AND action IN ('ROUTE_C1','ROUTE_C2','ROLLBACK','BLOCK_AND_FLAG')",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      },
+      {
+        "name": "C4 watch / warn",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "c4-audit"
+        },
+        "enable": true,
+        "iconColor": "yellow",
+        "target": {
+          "refId": "Anno",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, action || ' (' || severity_level || ')' || char(10) || reason AS text, action AS tags FROM decisions WHERE scenario = '${scenario}' AND action IN ('WATCH','WARN_ONLY')",
+          "rawQueryText": "SELECT time, action || ' (' || severity_level || ')' || char(10) || reason AS text, action AS tags FROM decisions WHERE scenario = '${scenario}' AND action IN ('WATCH','WARN_ONLY')",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "scenario",
+        "label": "Scenario",
+        "type": "query",
+        "datasource": {
+          "type": "frser-sqlite-datasource",
+          "uid": "c4-audit"
+        },
+        "query": "SELECT scenario FROM scenario_info ORDER BY scenario",
+        "definition": "SELECT scenario FROM scenario_info ORDER BY scenario",
+        "refresh": 1,
+        "current": {
+          "selected": true,
+          "text": "S3_concept",
+          "value": "S3_concept"
+        },
+        "multi": false,
+        "includeAll": false,
+        "sort": 1
+      }
+    ]
+  },
+  "links": [],
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Status",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Production model",
+      "description": "Model version behind the MLflow 'production' alias at the latest window. Changes to v1 after a ROLLBACK.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT 'v' || model_version AS value FROM window_metrics WHERE scenario = '${scenario}' ORDER BY window DESC LIMIT 1",
+          "rawQueryText": "SELECT 'v' || model_version AS value FROM window_metrics WHERE scenario = '${scenario}' ORDER BY window DESC LIMIT 1",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Latest diagnosis",
+      "description": "What kind of drift C4 believes is happening now.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT diagnosis FROM window_metrics WHERE scenario = '${scenario}' ORDER BY window DESC LIMIT 1",
+          "rawQueryText": "SELECT diagnosis FROM window_metrics WHERE scenario = '${scenario}' ORDER BY window DESC LIMIT 1",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "NO_DRIFT": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "No drift"
+                },
+                "SUSPECTED": {
+                  "color": "yellow",
+                  "index": 1,
+                  "text": "Suspected"
+                },
+                "COVARIATE_BENIGN": {
+                  "color": "light-blue",
+                  "index": 2,
+                  "text": "Covariate (benign)"
+                },
+                "COVARIATE_DEGRADING": {
+                  "color": "orange",
+                  "index": 3,
+                  "text": "Covariate (degrading)"
+                },
+                "CONCEPT_DRIFT": {
+                  "color": "red",
+                  "index": 4,
+                  "text": "Concept drift"
+                },
+                "LABEL_SHIFT": {
+                  "color": "purple",
+                  "index": 5,
+                  "text": "Label shift"
+                },
+                "DATA_QUALITY": {
+                  "color": "dark-red",
+                  "index": 6,
+                  "text": "Data quality"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Latest severity",
+      "description": "Low / Medium / High / Critical from the weighted severity score.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 9,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT severity_level FROM window_metrics WHERE scenario = '${scenario}' ORDER BY window DESC LIMIT 1",
+          "rawQueryText": "SELECT severity_level FROM window_metrics WHERE scenario = '${scenario}' ORDER BY window DESC LIMIT 1",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "None": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "None"
+                },
+                "Low": {
+                  "color": "yellow",
+                  "index": 1,
+                  "text": "Low"
+                },
+                "Medium": {
+                  "color": "orange",
+                  "index": 2,
+                  "text": "Medium"
+                },
+                "High": {
+                  "color": "red",
+                  "index": 3,
+                  "text": "High"
+                },
+                "Critical": {
+                  "color": "dark-red",
+                  "index": 4,
+                  "text": "Critical"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Actions taken",
+      "description": "Significant (costly) actions: route to C1/C2, rollback, block.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 13,
+        "y": 1,
+        "w": 3,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT COUNT(*) AS actions FROM decisions WHERE scenario = '${scenario}' AND action IN ('ROUTE_C1','ROUTE_C2','ROLLBACK','BLOCK_AND_FLAG')",
+          "rawQueryText": "SELECT COUNT(*) AS actions FROM decisions WHERE scenario = '${scenario}' AND action IN ('ROUTE_C1','ROUTE_C2','ROLLBACK','BLOCK_AND_FLAG')",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Drift injected at",
+      "description": "Ground truth from the simulator. Not known to C4 - shown for evaluation only.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT COALESCE('window ' || drift_start_window, 'none') AS value FROM scenario_info WHERE scenario = '${scenario}'",
+          "rawQueryText": "SELECT COALESCE('window ' || drift_start_window, 'none') AS value FROM scenario_info WHERE scenario = '${scenario}'",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Detection delay",
+      "description": "Windows between the injected drift and C4's first action (true labels arrive 3 windows late).",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT COALESCE(detection_delay || CASE detection_delay WHEN 1 THEN ' window' ELSE ' windows' END, '-') AS value FROM scenario_info WHERE scenario = '${scenario}'",
+          "rawQueryText": "SELECT COALESCE(detection_delay || CASE detection_delay WHEN 1 THEN ' window' ELSE ' windows' END, '-') AS value FROM scenario_info WHERE scenario = '${scenario}'",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "textMode": "value",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "/.*/",
+          "values": false
+        },
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 8,
+      "type": "table",
+      "title": "Scenario under test",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT scenario AS Scenario, description AS Description, expected_diagnosis AS 'Expected diagnosis', expected_action AS 'Expected action', run_id AS 'C4 run', run_started_at AS 'Run started' FROM scenario_info WHERE scenario = '${scenario}'",
+          "rawQueryText": "SELECT scenario AS Scenario, description AS Description, expected_diagnosis AS 'Expected diagnosis', expected_action AS 'Expected action', run_id AS 'C4 run', run_started_at AS 'Run started' FROM scenario_info WHERE scenario = '${scenario}'",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Description"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 620
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    },
+    {
+      "id": 9,
+      "type": "row",
+      "title": "C4 decisions over time",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 10,
+      "type": "state-timeline",
+      "title": "Diagnosis → severity → action, per window",
+      "description": "Each column is one production window (1 window = 1 simulated hour).",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, diagnosis AS Diagnosis, severity_level AS Severity, action AS Action FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "rawQueryText": "SELECT time, diagnosis AS Diagnosis, severity_level AS Severity, action AS Action FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 85,
+            "lineWidth": 0
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Diagnosis"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "NO_DRIFT": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "No drift"
+                      },
+                      "SUSPECTED": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "Suspected"
+                      },
+                      "COVARIATE_BENIGN": {
+                        "color": "light-blue",
+                        "index": 2,
+                        "text": "Covariate (benign)"
+                      },
+                      "COVARIATE_DEGRADING": {
+                        "color": "orange",
+                        "index": 3,
+                        "text": "Covariate (degrading)"
+                      },
+                      "CONCEPT_DRIFT": {
+                        "color": "red",
+                        "index": 4,
+                        "text": "Concept drift"
+                      },
+                      "LABEL_SHIFT": {
+                        "color": "purple",
+                        "index": 5,
+                        "text": "Label shift"
+                      },
+                      "DATA_QUALITY": {
+                        "color": "dark-red",
+                        "index": 6,
+                        "text": "Data quality"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "None": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "None"
+                      },
+                      "Low": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "Medium"
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 3,
+                        "text": "High"
+                      },
+                      "Critical": {
+                        "color": "dark-red",
+                        "index": 4,
+                        "text": "Critical"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Action"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "NONE": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "None"
+                      },
+                      "WATCH": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "Watch"
+                      },
+                      "WARN_ONLY": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "Warn only"
+                      },
+                      "ROUTE_C1": {
+                        "color": "blue",
+                        "index": 3,
+                        "text": "Route → C1"
+                      },
+                      "ROUTE_C2": {
+                        "color": "purple",
+                        "index": 4,
+                        "text": "Route → C2"
+                      },
+                      "ROLLBACK": {
+                        "color": "dark-red",
+                        "index": 5,
+                        "text": "Rollback"
+                      },
+                      "BLOCK_AND_FLAG": {
+                        "color": "red",
+                        "index": 6,
+                        "text": "Block & flag"
+                      },
+                      "COOLDOWN": {
+                        "color": "text",
+                        "index": 7,
+                        "text": "Cooldown"
+                      },
+                      "AWAITING": {
+                        "color": "text",
+                        "index": 8,
+                        "text": "Awaiting remediation"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "alignValue": "center",
+        "rowHeight": 0.85,
+        "legend": {
+          "showLegend": false
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Severity score",
+      "description": "Weighted sum of magnitude, persistence, scope and performance drop. Dashed lines: Medium 0.25, High 0.50, Critical 0.85.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, severity_score AS 'Severity score' FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "rawQueryText": "SELECT time, severity_score AS 'Severity score' FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "drawStyle": "line",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            },
+            "gradientMode": "scheme"
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "min": 0,
+          "max": 1,
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.25
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              },
+              {
+                "color": "dark-red",
+                "value": 0.85
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Model performance (delayed labels)",
+      "description": "Measured once true labels arrive (3 windows late), over the last 2 labelled windows. Gaps = labels not here yet.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 17,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, f1 AS F1, accuracy AS Accuracy FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "rawQueryText": "SELECT time, f1 AS F1, accuracy AS Accuracy FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "drawStyle": "line",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "max": 1,
+          "decimals": 3
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "type": "row",
+      "title": "Feature drift",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 25,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "Drift ratio per feature (score ÷ calibrated threshold)",
+      "description": "Every feature on one scale. Above 1 (red dashed line) = the feature's own calibrated threshold is crossed and the feature 'fires'.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 26,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, feature, ratio FROM feature_drift WHERE scenario = '${scenario}' ORDER BY time",
+          "rawQueryText": "SELECT time, feature, ratio FROM feature_drift WHERE scenario = '${scenario}' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "drawStyle": "line",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "displayName": "${__field.labels.feature}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "PSI – numeric features",
+      "description": "Population Stability Index against the model's versioned baseline. Rule of thumb: 0.1 moderate, 0.2 significant.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 35,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, feature, score FROM feature_drift WHERE scenario = '${scenario}' AND test = 'PSI' ORDER BY time",
+          "rawQueryText": "SELECT time, feature, score FROM feature_drift WHERE scenario = '${scenario}' AND test = 'PSI' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "drawStyle": "line",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0,
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 0.2
+              }
+            ]
+          },
+          "displayName": "${__field.labels.feature}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "JSD – categorical features",
+      "description": "Jensen-Shannon distance of each category mix against the baseline.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 35,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, feature, score FROM feature_drift WHERE scenario = '${scenario}' AND test = 'JSD' ORDER BY time",
+          "rawQueryText": "SELECT time, feature, score FROM feature_drift WHERE scenario = '${scenario}' AND test = 'JSD' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "drawStyle": "line",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "decimals": 3,
+          "displayName": "${__field.labels.feature}"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 17,
+      "type": "row",
+      "title": "Prediction drift & data quality",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 43,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Prediction drift",
+      "description": "Shift in what the model outputs - available immediately, before labels arrive.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, prediction_share AS 'Predicted >50K share', confidence_mean AS 'Mean confidence' FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "rawQueryText": "SELECT time, prediction_share AS 'Predicted >50K share', confidence_mean AS 'Mean confidence' FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "drawStyle": "line",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "percentunit",
+          "min": 0,
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Signals firing per window",
+      "description": "How many features crossed their threshold, and how many data-quality rules (nulls, ranges, unseen categories) broke.",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 44,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT time, n_fired AS 'Features fired', dq_issues AS 'Data-quality issues' FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "rawQueryText": "SELECT time, n_fired AS 'Features fired', dq_issues AS 'Data-quality issues' FROM window_metrics WHERE scenario = '${scenario}' ORDER BY time",
+          "queryType": "time series",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 80,
+            "drawStyle": "bars",
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisSoftMin": 0
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "min": 0,
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Audit log",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 21,
+      "type": "table",
+      "title": "Decisions (audit log)",
+      "datasource": {
+        "type": "frser-sqlite-datasource",
+        "uid": "c4-audit"
+      },
+      "description": "Every decision C4 logged, from outputs/audit.db. Each one also has a Drift Report JSON in outputs/drift_reports/.",
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "frser-sqlite-datasource",
+            "uid": "c4-audit"
+          },
+          "queryText": "SELECT window AS Window, diagnosis AS Diagnosis, confidence AS Confidence, severity_level AS Severity, ROUND(severity_score, 3) AS Score, action AS Action, target AS Target, 'v' || model_version_before || ' → v' || model_version_after AS Model, reason AS Reason FROM decisions WHERE scenario = '${scenario}' ORDER BY window",
+          "rawQueryText": "SELECT window AS Window, diagnosis AS Diagnosis, confidence AS Confidence, severity_level AS Severity, ROUND(severity_score, 3) AS Score, action AS Action, target AS Target, 'v' || model_version_before || ' → v' || model_version_after AS Model, reason AS Reason FROM decisions WHERE scenario = '${scenario}' ORDER BY window",
+          "queryType": "table",
+          "timeColumns": [
+            "time"
+          ]
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Diagnosis"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "NO_DRIFT": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "No drift"
+                      },
+                      "SUSPECTED": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "Suspected"
+                      },
+                      "COVARIATE_BENIGN": {
+                        "color": "light-blue",
+                        "index": 2,
+                        "text": "Covariate (benign)"
+                      },
+                      "COVARIATE_DEGRADING": {
+                        "color": "orange",
+                        "index": 3,
+                        "text": "Covariate (degrading)"
+                      },
+                      "CONCEPT_DRIFT": {
+                        "color": "red",
+                        "index": 4,
+                        "text": "Concept drift"
+                      },
+                      "LABEL_SHIFT": {
+                        "color": "purple",
+                        "index": 5,
+                        "text": "Label shift"
+                      },
+                      "DATA_QUALITY": {
+                        "color": "dark-red",
+                        "index": 6,
+                        "text": "Data quality"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "None": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "None"
+                      },
+                      "Low": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "Low"
+                      },
+                      "Medium": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "Medium"
+                      },
+                      "High": {
+                        "color": "red",
+                        "index": 3,
+                        "text": "High"
+                      },
+                      "Critical": {
+                        "color": "dark-red",
+                        "index": 4,
+                        "text": "Critical"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Action"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "NONE": {
+                        "color": "green",
+                        "index": 0,
+                        "text": "None"
+                      },
+                      "WATCH": {
+                        "color": "yellow",
+                        "index": 1,
+                        "text": "Watch"
+                      },
+                      "WARN_ONLY": {
+                        "color": "orange",
+                        "index": 2,
+                        "text": "Warn only"
+                      },
+                      "ROUTE_C1": {
+                        "color": "blue",
+                        "index": 3,
+                        "text": "Route → C1"
+                      },
+                      "ROUTE_C2": {
+                        "color": "purple",
+                        "index": 4,
+                        "text": "Route → C2"
+                      },
+                      "ROLLBACK": {
+                        "color": "dark-red",
+                        "index": 5,
+                        "text": "Rollback"
+                      },
+                      "BLOCK_AND_FLAG": {
+                        "color": "red",
+                        "index": 6,
+                        "text": "Block & flag"
+                      },
+                      "COOLDOWN": {
+                        "color": "text",
+                        "index": 7,
+                        "text": "Cooldown"
+                      },
+                      "AWAITING": {
+                        "color": "text",
+                        "index": 8,
+                        "text": "Awaiting remediation"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Window"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 80
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.minWidth",
+                "value": 500
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      }
+    }
+  ]
+}

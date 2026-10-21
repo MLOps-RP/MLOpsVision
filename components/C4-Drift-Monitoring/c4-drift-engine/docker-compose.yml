@@ -1,0 +1,27 @@
+# Grafana OSS monitoring view for C4.
+# Reads outputs/c4_monitoring.db (written by run_c4 / src.tools.export_grafana).
+#
+#   docker compose up -d      -> http://localhost:3000  (admin / admin)
+#   docker compose down
+services:
+  grafana:
+    image: grafana/grafana-oss:11.6.0
+    container_name: c4-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_INSTALL_PLUGINS: frser-sqlite-datasource
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/c4_drift_monitoring.json
+      GF_USERS_DEFAULT_THEME: light
+    volumes:
+      - ./outputs:/c4-data
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana-storage:/var/lib/grafana
+
+volumes:
+  grafana-storage:
