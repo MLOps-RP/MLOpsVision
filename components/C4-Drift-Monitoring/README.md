@@ -66,6 +66,18 @@ In VS Code, press Ctrl+Shift+P → *Python: Select Interpreter* → pick the one
 
 Run steps 6 and 7 in **separate terminals**; activate `.venv` in each one. Stop either with Ctrl+C.
 
+### Grafana monitoring view (optional, needs Docker Desktop)
+
+Streamlit is the interactive demo. Grafana OSS is the production-style monitoring view: severity score, F1, PSI / JSD per feature and prediction drift over time. Markers on every chart show where drift was injected (blue), each C4 action such as ROUTE_C2 or ROLLBACK (red) and WATCH / WARN (yellow).
+
+```bash
+docker compose up -d        # first start downloads Grafana + the SQLite plugin (~1 min)
+```
+
+Open http://localhost:3000 (anyone can view; log in as `admin` / `admin` to edit) and pick a scenario at the top. Stop it with `docker compose down`.
+
+Each run of `run_c4` (or `run_all`) refreshes `outputs/c4_monitoring.db`, which Grafana reads. Press *Refresh* in Grafana afterwards. Grafana needs a time axis, so each window is shown as one simulated hour from 2026-01-01 00:00 UTC. To rebuild the file by hand: `python -m src.tools.export_grafana`.
+
 ### What step 4 prints (example)
 
 ```
@@ -116,6 +128,7 @@ In the dashboard, pick a scenario in the sidebar and press **Run C4 on this scen
 | `data/scenarios/<scenario>/` | production windows + `ground_truth.json` |
 | `outputs/drift_reports/<scenario>/*.json` | **Drift Reports** (the contract for C1/C2/C3) |
 | `outputs/audit.db` | **audit log** (tables `runs`, `window_signals`, `decisions`) |
+| `outputs/c4_monitoring.db` | latest run per scenario, flattened for Grafana |
 | `outputs/runs/<scenario>/window_log.csv` | one row per window, used by the dashboard |
 | `results/results_table.csv`, `results/unnecessary_retrains.png` | results for the slides |
 
@@ -153,7 +166,9 @@ pd.read_sql("SELECT * FROM decisions", sqlite3.connect("outputs/audit.db"))
 | `src/c4/run_c4.py` | **the C4 engine**: runs everything per window |
 | `src/experiments/run_all.py` | all scenarios + naive baseline + results |
 | `src/tools/reset_production.py` | set production back to v2 |
+| `src/tools/export_grafana.py` | audit log → time-indexed tables for Grafana (`outputs/c4_monitoring.db`) |
 | `dashboard/app.py` | Streamlit dashboard (input → processing → output) |
+| `docker-compose.yml`, `grafana/` | Grafana OSS service, data source and the provisioned *C4 – Drift Monitoring* dashboard |
 | `notebooks/01_learn_step_by_step.ipynb` | learn the ideas interactively (training, PSI, KS, baseline) |
 
 ---
