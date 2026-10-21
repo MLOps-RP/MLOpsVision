@@ -1,0 +1,1587 @@
+{
+ "schema_version": "0.1.0",
+ "gate_version": "0.1.0",
+ "run_id": "0730f08e01f7426ab8b6644e9f1303ef",
+ "created_at_utc": "2026-10-20T06:47:54.164123Z",
+ "candidate": {
+  "candidate_id": "unsafe_model",
+  "model_path": "C:\\artifacts\\fixtures\\unsafe_model\\model.joblib",
+  "model_sha256": "d92999f1a81b75bcbc0bd6e8745bd6760e76b4ca536d7446b48dc29b82500db0",
+  "eval_data_sha256": "bba157c9f381e730133239c0f78c5cf8c98f3b16f364eaac58fc54ebc0862722",
+  "metadata_sha256": "f3f18c06d3b143cf9dfbbbcb35aac908f042cc9e14da69f757a555b7710cacb6"
+ },
+ "scenario": {
+  "mode": "real",
+  "name": null,
+  "description": null,
+  "simulated_inputs": []
+ },
+ "config_hash": "e5cd88eaccee847a641f880954e58a1a4d203197483052cf7df2781130923bc7",
+ "config_snapshot": {
+  "profile": "extended",
+  "description": "Default checks plus conflicting labels, training duplicates, model-file safety and CPU time.",
+  "weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "missing_policy": "exclude_and_cap",
+  "coverage": {
+   "min_dimension": 0.5,
+   "min_overall": 0.8
+  },
+  "decision": {
+   "promote_at": 75.0,
+   "reject_below": 50.0,
+   "must_pass_checks": [
+    "training_validity.metadata_completeness",
+    "training_validity.overfit_gap",
+    "calibration.ece",
+    "operational.latency",
+    "training_validity.eval_label_conflicts",
+    "operational.model_file_safety"
+   ]
+  },
+  "critical_rules": [
+   {
+    "id": "model_not_loadable",
+    "name": "Model artifact cannot be loaded",
+    "description": null,
+    "condition": {
+     "check": "operational.model_loadable",
+     "status_in": [
+      "FAIL",
+      "ERROR"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "target_leakage",
+    "name": "Target leakage detected",
+    "description": null,
+    "condition": {
+     "check": "leakage.single_feature_predictiveness",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "severe_selection_rate_disparity",
+    "name": "Severe selection-rate disparity between groups",
+    "description": null,
+    "condition": {
+     "check": "fairness.selection_rate_ratio",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "performance_below_minimum",
+    "name": "F1 below the absolute minimum",
+    "description": null,
+    "condition": {
+     "check": "behaviour.f1",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "unsafe_model_file",
+    "name": "Model file references dangerous code",
+    "description": null,
+    "condition": {
+     "check": "operational.model_file_safety",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   }
+  ],
+  "evaluation": {
+   "random_seed": 42,
+   "min_group_size": 30,
+   "ece_bins": 10,
+   "latency_warmup_runs": 5,
+   "latency_repeats": 50,
+   "robustness_noise_scale": 0.1,
+   "robustness_repeats": 5,
+   "leakage_max_rows": 20000,
+   "leakage_cv_folds": 5,
+   "cpu_min_seconds": 0.3,
+   "cpu_max_rounds": 200,
+   "cpu_sample_rows": 1000
+  },
+  "hidden_groups": {
+   "methods": [
+    "tree",
+    "kmeans"
+   ],
+   "folds": 2,
+   "tree_depth": 3,
+   "tree_min_leaf_fraction": 0.03,
+   "kmeans_clusters": 8,
+   "kmeans_weighting": "residual",
+   "min_group_rows": 30,
+   "min_group_fraction": 0.02,
+   "alpha": 0.05,
+   "min_effect": 0.1,
+   "min_rows": 1000,
+   "min_errors": 50,
+   "recalibrate": true,
+   "recalibration_trigger_ece": 0.03,
+   "max_ece": 0.15,
+   "max_overall_gap": 0.15,
+   "max_categories": 20,
+   "exclude_features": [],
+   "extra_columns": [],
+   "report_groups": 10,
+   "consequence": "score_only",
+   "require_assessment": false
+  },
+  "model_safety": {
+   "refuse_at": "unrecognised",
+   "allowed_module_prefixes": [
+    "sklearn",
+    "numpy",
+    "scipy",
+    "pandas",
+    "joblib",
+    "xgboost",
+    "lightgbm",
+    "collections",
+    "copyreg",
+    "_codecs",
+    "datetime",
+    "decimal",
+    "fractions"
+   ],
+   "allowed_builtins": [
+    "list",
+    "dict",
+    "set",
+    "frozenset",
+    "tuple",
+    "object",
+    "int",
+    "float",
+    "str",
+    "bool",
+    "bytes",
+    "bytearray",
+    "complex",
+    "slice",
+    "range"
+   ],
+   "blocked_module_prefixes": [
+    "os",
+    "posix",
+    "nt",
+    "subprocess",
+    "socket",
+    "shutil",
+    "sys",
+    "ctypes",
+    "importlib",
+    "runpy",
+    "pty",
+    "marshal",
+    "pickle",
+    "_pickle",
+    "webbrowser",
+    "http",
+    "urllib",
+    "ftplib",
+    "smtplib",
+    "multiprocessing",
+    "threading",
+    "asyncio",
+    "signal",
+    "code",
+    "codeop",
+    "commands",
+    "popen2",
+    "platform",
+    "tempfile",
+    "glob",
+    "numpy.f2py",
+    "numpy.distutils",
+    "numpy.testing",
+    "pandas.io",
+    "pandas.read_pickle",
+    "sklearn.datasets",
+    "sklearn.externals"
+   ],
+   "blocked_globals": [
+    "joblib.load",
+    "joblib.numpy_pickle.load",
+    "numpy.load",
+    "numpy.fromfile",
+    "numpy.memmap",
+    "numpy.lib.npyio.load"
+   ],
+   "blocked_builtins": [
+    "eval",
+    "exec",
+    "compile",
+    "__import__",
+    "open",
+    "getattr",
+    "setattr",
+    "delattr",
+    "globals",
+    "locals",
+    "vars",
+    "input",
+    "breakpoint"
+   ]
+  },
+  "metadata": {
+   "required_fields": [
+    "model_type",
+    "task_type",
+    "target_column",
+    "positive_label",
+    "sensitive_columns",
+    "feature_columns",
+    "hyperparameters",
+    "training_metrics",
+    "train_rows",
+    "dataset"
+   ],
+   "reproducibility_fields": [
+    "random_state",
+    "split.seed",
+    "versions",
+    "train_data_sha256",
+    "code.commit"
+   ]
+  },
+  "checks": {
+   "training_validity.metadata_completeness": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.9,
+     "fail_at": 0.6,
+     "floor": 0.0
+    }
+   },
+   "training_validity.reproducibility_info": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.75,
+     "fail_at": 0.5,
+     "floor": 0.0
+    }
+   },
+   "training_validity.overfit_gap": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.1,
+     "floor": 0.25
+    }
+   },
+   "training_validity.train_eval_overlap": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.01,
+     "fail_at": 0.05,
+     "floor": 0.2
+    }
+   },
+   "training_validity.eval_label_conflicts": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.005,
+     "fail_at": 0.03,
+     "floor": 0.15
+    }
+   },
+   "training_validity.train_duplicate_rows": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.01,
+     "fail_at": 0.1,
+     "floor": 0.3
+    }
+   },
+   "leakage.single_feature_predictiveness": {
+    "enabled": true,
+    "weight": 3.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.9,
+     "fail_at": 0.95,
+     "floor": 1.0
+    }
+   },
+   "behaviour.f1": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.6,
+     "fail_at": 0.45,
+     "floor": 0.0
+    }
+   },
+   "behaviour.roc_auc": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.95,
+     "pass_at": 0.85,
+     "fail_at": 0.7,
+     "floor": 0.5
+    }
+   },
+   "behaviour.precision": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.85,
+     "pass_at": 0.65,
+     "fail_at": 0.45,
+     "floor": 0.0
+    }
+   },
+   "behaviour.recall": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.55,
+     "fail_at": 0.35,
+     "floor": 0.0
+    }
+   },
+   "behaviour.subgroup_f1_gap": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.02,
+     "pass_at": 0.1,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "fairness.selection_rate_ratio": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.9,
+     "pass_at": 0.5,
+     "fail_at": 0.2,
+     "floor": 0.0
+    }
+   },
+   "fairness.equalized_odds": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.02,
+     "pass_at": 0.1,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "calibration.ece": {
+    "enabled": true,
+    "weight": 1.5,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.1,
+     "floor": 0.25
+    }
+   },
+   "behaviour.hidden_failure_groups": {
+    "enabled": false,
+    "weight": 1.5,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.0,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "robustness.noise_degradation": {
+    "enabled": false,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.15,
+     "floor": 0.4
+    }
+   },
+   "operational.model_loadable": {
+    "enabled": true,
+    "weight": 3.0,
+    "required": true,
+    "thresholds": null
+   },
+   "operational.input_schema": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": null
+   },
+   "operational.prediction_determinism": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": null
+   },
+   "operational.malformed_input_handling": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": null
+   },
+   "operational.artifact_size": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 10.0,
+     "pass_at": 100.0,
+     "fail_at": 500.0,
+     "floor": 2000.0
+    }
+   },
+   "operational.latency": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": false,
+    "thresholds": {
+     "target": 10.0,
+     "pass_at": 50.0,
+     "fail_at": 200.0,
+     "floor": 1000.0
+    }
+   },
+   "operational.memory": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 100.0,
+     "pass_at": 500.0,
+     "fail_at": 2000.0,
+     "floor": 8000.0
+    }
+   },
+   "operational.dependency_match": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.8,
+     "fail_at": 0.5,
+     "floor": 0.0
+    }
+   },
+   "operational.model_file_safety": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.0,
+     "fail_at": 1.0,
+     "floor": 2.0
+    }
+   },
+   "operational.cpu_time": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.05,
+     "pass_at": 0.5,
+     "fail_at": 3.0,
+     "floor": 10.0
+    }
+   }
+  }
+ },
+ "environment": {
+  "machine": {
+   "platform": "Windows-11-10.0.26200-SP0",
+   "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+   "cpu_count": 12,
+   "ram_gb": 15.6,
+   "versions": {
+    "python": "3.12.1",
+    "scikit_learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "joblib": "1.6.0"
+   }
+  },
+  "timings_seconds": {
+   "load": 0.01507609999680426,
+   "training_validity": 0.3586213999951724,
+   "model_behaviour": 7.310000364668667e-05,
+   "operational_readiness": 0.0025342000008095056,
+   "score_and_decide": 0.0003826000029221177
+  }
+ },
+ "checks": [
+  {
+   "id": "training_validity.metadata_completeness",
+   "dimension": "training_validity",
+   "name": "Share of required training-metadata fields present",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.9,
+    "fail_at": 0.6,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "10 of 10 required training-metadata fields are present.",
+   "details": {
+    "missing": [],
+    "present": [
+     "model_type",
+     "task_type",
+     "target_column",
+     "positive_label",
+     "sensitive_columns",
+     "feature_columns",
+     "hyperparameters",
+     "training_metrics",
+     "train_rows",
+     "dataset"
+    ],
+    "note": "Presence is checked; the values are not verified."
+   }
+  },
+  {
+   "id": "training_validity.reproducibility_info",
+   "dimension": "training_validity",
+   "name": "Share of reproducibility fields present (seed, versions, hashes, commit)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.75,
+    "fail_at": 0.5,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "5 of 5 reproducibility fields are present.",
+   "details": {
+    "missing": [],
+    "present": [
+     "random_state",
+     "split.seed",
+     "versions",
+     "train_data_sha256",
+     "code.commit"
+    ],
+    "note": "Presence is checked; the values are not verified."
+   }
+  },
+  {
+   "id": "training_validity.overfit_gap",
+   "dimension": "training_validity",
+   "name": "Train accuracy minus eval accuracy (needs train metrics)",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.01,
+    "pass_at": 0.05,
+    "fail_at": 0.1,
+    "floor": 0.25
+   },
+   "required": false,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "training_validity.train_eval_overlap",
+   "dimension": "training_validity",
+   "name": "Eval rows that also appear in training data (needs row hashes)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 99.38574938574938,
+   "raw_value": 0.0012285012285012285,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.01,
+    "fail_at": 0.05,
+    "floor": 0.2
+   },
+   "required": false,
+   "message": "12 of 9768 evaluation rows (0.12%) also appear in the training row hashes. Datasets can contain genuine duplicate records (0.03% of evaluation rows duplicate another evaluation row), so a small overlap is not by itself leakage. The hashes are producer-supplied.",
+   "details": {
+    "overlap_rows": 12,
+    "eval_rows": 9768,
+    "train_hashes": 29288,
+    "eval_internal_duplicate_fraction": 0.00030712530712528885,
+    "hash_file": "C:\\artifacts\\data\\train_row_hashes.txt",
+    "hashed_columns": [
+     "age",
+     "workclass",
+     "fnlwgt",
+     "education",
+     "education-num",
+     "marital-status",
+     "occupation",
+     "relationship",
+     "race",
+     "sex",
+     "capital-gain",
+     "capital-loss",
+     "hours-per-week",
+     "native-country"
+    ]
+   }
+  },
+  {
+   "id": "leakage.single_feature_predictiveness",
+   "dimension": "training_validity",
+   "name": "Highest ROC AUC reached by any single feature on eval data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.772365756400908,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.9,
+    "fail_at": 0.95,
+    "floor": 1.0
+   },
+   "required": true,
+   "message": "The strongest single feature, 'relationship', reaches a cross-validated ROC AUC of 0.772 on its own (12 features, 9768 rows). Values near 1.0 suggest the feature leaks the label.",
+   "details": {
+    "top_feature": "relationship",
+    "top_features": {
+     "relationship": 0.772365756400908,
+     "marital-status": 0.764019537439494,
+     "education-num": 0.7088042684179259,
+     "age": 0.6994257308444366,
+     "occupation": 0.6916620499524163
+    },
+    "all_features": {
+     "relationship": 0.772365756400908,
+     "marital-status": 0.764019537439494,
+     "education-num": 0.7088042684179259,
+     "age": 0.6994257308444366,
+     "occupation": 0.6916620499524163,
+     "education": 0.6725071628890225,
+     "hours-per-week": 0.6678876846563336,
+     "capital-gain": 0.601976725310886,
+     "workclass": 0.5801019644601394,
+     "capital-loss": 0.5497365089878082,
+     "fnlwgt": 0.526538203677513,
+     "native-country": 0.5175595222157096
+    },
+    "failed_features": {},
+    "not_assessed_columns": [],
+    "rows_used": 9768,
+    "sampled": false,
+    "cv_folds": 5,
+    "tree_depth": 4,
+    "positive_label": ">50K",
+    "caveat": "A legitimately strong feature also scores high; leakage spread over several features is not detected."
+   }
+  },
+  {
+   "id": "training_validity.eval_label_conflicts",
+   "dimension": "training_validity",
+   "name": "Evaluation rows whose features are identical to another row's but whose label differs",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.005,
+    "fail_at": 0.03,
+    "floor": 0.15
+   },
+   "required": false,
+   "message": "0 of 9768 evaluation rows (0.00%) share their feature values with a row that has a different label (0 conflicting groups among 3 groups of repeated feature values). Conflicting labels put a ceiling on the accuracy any model can reach and make the measured metrics unreliable.",
+   "details": {
+    "conflict_rows": 0,
+    "conflicting_groups": 0,
+    "repeated_groups": 3,
+    "rows_in_repeated_groups": 6,
+    "eval_rows": 9768,
+    "feature_columns": [
+     "age",
+     "workclass",
+     "fnlwgt",
+     "education",
+     "education-num",
+     "marital-status",
+     "occupation",
+     "relationship",
+     "capital-gain",
+     "capital-loss",
+     "hours-per-week",
+     "native-country"
+    ],
+    "caveat": "Only exact repeats of the feature values are found, so data with continuous features has little power; the gate cannot check the training labels, which it does not receive."
+   }
+  },
+  {
+   "id": "training_validity.train_duplicate_rows",
+   "dimension": "training_validity",
+   "name": "Training rows that duplicate another training row (from the supplied row hashes)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 99.80663140533468,
+   "raw_value": 0.0005801057839959051,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.01,
+    "fail_at": 0.1,
+    "floor": 0.3
+   },
+   "required": false,
+   "message": "17 of 29305 training rows (0.06%) duplicate another training row. Duplicates can make a model look better on rows it has memorised and are often a data-quality problem upstream. The hashes are producer-supplied and cover the feature columns only, so rows with the same features and different labels also count as duplicates.",
+   "details": {
+    "duplicate_rows": 17,
+    "training_rows": 29305,
+    "distinct_rows": 29288,
+    "hash_file": "C:\\artifacts\\data\\train_row_hashes.txt",
+    "caveat": "The gate does not see the training data, only its row hashes."
+   }
+  },
+  {
+   "id": "behaviour.f1",
+   "dimension": "model_behaviour",
+   "name": "F1 on the evaluation data",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.6,
+    "fail_at": 0.45,
+    "floor": 0.0
+   },
+   "required": true,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "behaviour.roc_auc",
+   "dimension": "model_behaviour",
+   "name": "ROC AUC on the evaluation data",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.95,
+    "pass_at": 0.85,
+    "fail_at": 0.7,
+    "floor": 0.5
+   },
+   "required": true,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "behaviour.precision",
+   "dimension": "model_behaviour",
+   "name": "Precision on the evaluation data",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.85,
+    "pass_at": 0.65,
+    "fail_at": 0.45,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "behaviour.recall",
+   "dimension": "model_behaviour",
+   "name": "Recall on the evaluation data",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.55,
+    "fail_at": 0.35,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "behaviour.subgroup_f1_gap",
+   "dimension": "model_behaviour",
+   "name": "Largest F1 difference between sufficiently large subgroups",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.02,
+    "pass_at": 0.1,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "fairness.selection_rate_ratio",
+   "dimension": "model_behaviour",
+   "name": "Lowest/highest group selection rate (worst over sensitive attributes)",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.9,
+    "pass_at": 0.5,
+    "fail_at": 0.2,
+    "floor": 0.0
+   },
+   "required": true,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "fairness.equalized_odds",
+   "dimension": "model_behaviour",
+   "name": "Equalized-odds difference (worst over sensitive attributes)",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.02,
+    "pass_at": 0.1,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "calibration.ece",
+   "dimension": "model_behaviour",
+   "name": "Expected calibration error",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.01,
+    "pass_at": 0.05,
+    "fail_at": 0.1,
+    "floor": 0.25
+   },
+   "required": false,
+   "message": "Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "operational.model_loadable",
+   "dimension": "operational_readiness",
+   "name": "Artifact exists and loads",
+   "status": "FAIL",
+   "evidence_source": "MEASURED",
+   "score": 0.0,
+   "raw_value": false,
+   "direction": "binary",
+   "thresholds": {},
+   "required": true,
+   "message": "the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.",
+   "details": {
+    "error": "the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.",
+    "failure_kind": "blocked_unsafe"
+   }
+  },
+  {
+   "id": "operational.input_schema",
+   "dimension": "operational_readiness",
+   "name": "Model predicts on the evaluation data schema",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "binary",
+   "thresholds": {},
+   "required": true,
+   "message": "Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "operational.prediction_determinism",
+   "dimension": "operational_readiness",
+   "name": "Repeated prediction on the same data gives identical output",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "binary",
+   "thresholds": {},
+   "required": false,
+   "message": "Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "operational.malformed_input_handling",
+   "dimension": "operational_readiness",
+   "name": "Malformed input is rejected cleanly instead of crashing",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "binary",
+   "thresholds": {},
+   "required": false,
+   "message": "Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "operational.artifact_size",
+   "dimension": "operational_readiness",
+   "name": "Model file size",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 7.724761962890625e-05,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 10.0,
+    "pass_at": 100.0,
+    "fail_at": 500.0,
+    "floor": 2000.0
+   },
+   "required": false,
+   "message": "Model file is 0.1 KB.",
+   "details": {
+    "bytes": 81
+   }
+  },
+  {
+   "id": "operational.latency",
+   "dimension": "operational_readiness",
+   "name": "95th-percentile single-row prediction latency",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 10.0,
+    "pass_at": 50.0,
+    "fail_at": 200.0,
+    "floor": 1000.0
+   },
+   "required": false,
+   "message": "Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  },
+  {
+   "id": "operational.memory",
+   "dimension": "operational_readiness",
+   "name": "Memory increase when loading and predicting",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 100.0,
+    "pass_at": 500.0,
+    "fail_at": 2000.0,
+    "floor": 8000.0
+   },
+   "required": false,
+   "message": "Model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.).",
+   "details": {}
+  },
+  {
+   "id": "operational.dependency_match",
+   "dimension": "operational_readiness",
+   "name": "Share of declared library versions matching the current environment",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.8,
+    "fail_at": 0.5,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "5 of 5 declared library versions match the current environment.",
+   "details": {
+    "comparisons": {
+     "python": {
+      "declared": "3.12.1",
+      "current": "3.12.1",
+      "match": true
+     },
+     "scikit_learn": {
+      "declared": "1.9.1",
+      "current": "1.9.1",
+      "match": true
+     },
+     "pandas": {
+      "declared": "3.0.6",
+      "current": "3.0.6",
+      "match": true
+     },
+     "numpy": {
+      "declared": "2.5.4",
+      "current": "2.5.4",
+      "match": true
+     },
+     "joblib": {
+      "declared": "1.6.0",
+      "current": "1.6.0",
+      "match": true
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.model_file_safety",
+   "dimension": "operational_readiness",
+   "name": "Static scan of the model file for code references that loading would execute (0 only recognised libraries, 1 unrecognised code, 2 dangerous code)",
+   "status": "FAIL",
+   "evidence_source": "MEASURED",
+   "score": 0.0,
+   "raw_value": 2.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.0,
+    "fail_at": 1.0,
+    "floor": 2.0
+   },
+   "required": true,
+   "message": "The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.",
+   "details": {
+    "verdict": "dangerous code",
+    "dangerous": [
+     "nt.write"
+    ],
+    "unrecognised": [],
+    "references": [
+     "nt.write"
+    ],
+    "reference_count": 1,
+    "loaded": false,
+    "refuse_at": "unrecognised",
+    "file_bytes": 81
+   }
+  },
+  {
+   "id": "operational.cpu_time",
+   "dimension": "operational_readiness",
+   "name": "CPU time the process spends predicting one row, from a batch of evaluation rows",
+   "status": "UNAVAILABLE",
+   "evidence_source": "UNAVAILABLE",
+   "score": null,
+   "raw_value": null,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.05,
+    "pass_at": 0.5,
+    "fail_at": 3.0,
+    "floor": 10.0
+   },
+   "required": false,
+   "message": "Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+   "details": {}
+  }
+ ],
+ "scorecard": {
+  "dimensions": {
+   "training_validity": {
+    "dimension": "training_validity",
+    "score": 99.8990475988855,
+    "coverage": 0.8,
+    "provisional": true,
+    "available_checks": 6,
+    "total_checks": 7,
+    "note": "Provisional: 80% of the applicable check weight had evidence (exclude_and_cap).",
+    "contributions": [
+     {
+      "check_id": "training_validity.metadata_completeness",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 12.5
+     },
+     {
+      "check_id": "training_validity.reproducibility_info",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 12.5
+     },
+     {
+      "check_id": "training_validity.overfit_gap",
+      "weight": 2.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "training_validity.train_eval_overlap",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 99.38574938574938,
+      "treatment": "counted",
+      "points": 12.423218673218672
+     },
+     {
+      "check_id": "training_validity.eval_label_conflicts",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 12.5
+     },
+     {
+      "check_id": "training_validity.train_duplicate_rows",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 99.80663140533468,
+      "treatment": "counted",
+      "points": 12.475828925666836
+     },
+     {
+      "check_id": "leakage.single_feature_predictiveness",
+      "weight": 3.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 37.5
+     }
+    ]
+   },
+   "model_behaviour": {
+    "dimension": "model_behaviour",
+    "score": null,
+    "coverage": 0.0,
+    "provisional": true,
+    "available_checks": 0,
+    "total_checks": 8,
+    "note": "Evidence coverage 0% is below the minimum 50%, so this dimension has no score.",
+    "contributions": [
+     {
+      "check_id": "behaviour.f1",
+      "weight": 2.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "behaviour.roc_auc",
+      "weight": 2.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "behaviour.precision",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "behaviour.recall",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "behaviour.subgroup_f1_gap",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "fairness.selection_rate_ratio",
+      "weight": 2.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "fairness.equalized_odds",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "calibration.ece",
+      "weight": 1.5,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     }
+    ]
+   },
+   "operational_readiness": {
+    "dimension": "operational_readiness",
+    "score": null,
+    "coverage": 0.4666666666666667,
+    "provisional": true,
+    "available_checks": 4,
+    "total_checks": 10,
+    "note": "Evidence coverage 47% is below the minimum 50%, so this dimension has no score.",
+    "contributions": [
+     {
+      "check_id": "operational.model_loadable",
+      "weight": 3.0,
+      "status": "FAIL",
+      "score": 0.0,
+      "treatment": "counted",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.input_schema",
+      "weight": 2.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.prediction_determinism",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.malformed_input_handling",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.artifact_size",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 14.285714285714286
+     },
+     {
+      "check_id": "operational.latency",
+      "weight": 2.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.memory",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.dependency_match",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 14.285714285714286
+     },
+     {
+      "check_id": "operational.model_file_safety",
+      "weight": 2.0,
+      "status": "FAIL",
+      "score": 0.0,
+      "treatment": "counted",
+      "points": 0.0
+     },
+     {
+      "check_id": "operational.cpu_time",
+      "weight": 1.0,
+      "status": "UNAVAILABLE",
+      "score": null,
+      "treatment": "excluded_unavailable",
+      "points": 0.0
+     }
+    ]
+   }
+  },
+  "weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "effective_weights": {
+   "training_validity": 1.0,
+   "model_behaviour": 0.0,
+   "operational_readiness": 0.0
+  },
+  "mqs": 99.8990475988855,
+  "mqs_lower_bound": 23.97577142373252,
+  "overall_coverage": 0.3333333333333333,
+  "provisional": true,
+  "missing_policy": "exclude_and_cap",
+  "mqs_sufficient_evidence": false,
+  "insufficient_evidence_reason": "no score for model behaviour and operational readiness; overall evidence 33% is below the required 80%"
+ },
+ "decision": {
+  "decision": "ROLLBACK",
+  "action_mode": "RECOMMENDATION",
+  "mqs": 99.8990475988855,
+  "overridden_by_critical": true,
+  "triggered_rules": [
+   {
+    "rule_id": "model_not_loadable",
+    "name": "Model artifact cannot be loaded",
+    "kind": "critical",
+    "effect": "ROLLBACK",
+    "reason": "Model artifact cannot be loaded: check 'operational.model_loadable' is FAIL (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.).",
+    "observed": "FAIL",
+    "threshold": [
+     "FAIL",
+     "ERROR"
+    ],
+    "check_ids": [
+     "operational.model_loadable"
+    ]
+   },
+   {
+    "rule_id": "unsafe_model_file",
+    "name": "Model file references dangerous code",
+    "kind": "critical",
+    "effect": "ROLLBACK",
+    "reason": "Model file references dangerous code: check 'operational.model_file_safety' is FAIL (The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.).",
+    "observed": "FAIL",
+    "threshold": [
+     "FAIL"
+    ],
+    "check_ids": [
+     "operational.model_file_safety"
+    ]
+   },
+   {
+    "rule_id": "required_evidence_missing",
+    "name": "Required evidence is missing",
+    "kind": "evidence",
+    "effect": "HOLD",
+    "reason": "Required checks have no evidence: behaviour.f1, behaviour.roc_auc, fairness.selection_rate_ratio, operational.input_schema.",
+    "observed": [
+     "behaviour.f1",
+     "behaviour.roc_auc",
+     "fairness.selection_rate_ratio",
+     "operational.input_schema"
+    ],
+    "threshold": null,
+    "check_ids": [
+     "behaviour.f1",
+     "behaviour.roc_auc",
+     "fairness.selection_rate_ratio",
+     "operational.input_schema"
+    ]
+   },
+   {
+    "rule_id": "overall_coverage_below_minimum",
+    "name": "Evidence coverage is too low",
+    "kind": "evidence",
+    "effect": "HOLD",
+    "reason": "Overall evidence coverage 33% is below the required 80%.",
+    "observed": 0.3333333333333333,
+    "threshold": 0.8,
+    "check_ids": []
+   },
+   {
+    "rule_id": "must_pass:training_validity.overfit_gap",
+    "name": "Must-pass check 'training_validity.overfit_gap' did not pass",
+    "kind": "blocking",
+    "effect": "HOLD",
+    "reason": "Check 'training_validity.overfit_gap' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)).",
+    "observed": "UNAVAILABLE",
+    "threshold": "PASS",
+    "check_ids": [
+     "training_validity.overfit_gap"
+    ]
+   },
+   {
+    "rule_id": "must_pass:calibration.ece",
+    "name": "Must-pass check 'calibration.ece' did not pass",
+    "kind": "blocking",
+    "effect": "HOLD",
+    "reason": "Check 'calibration.ece' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)).",
+    "observed": "UNAVAILABLE",
+    "threshold": "PASS",
+    "check_ids": [
+     "calibration.ece"
+    ]
+   },
+   {
+    "rule_id": "must_pass:operational.latency",
+    "name": "Must-pass check 'operational.latency' did not pass",
+    "kind": "blocking",
+    "effect": "HOLD",
+    "reason": "Check 'operational.latency' is UNAVAILABLE; it must PASS before promotion (Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)).",
+    "observed": "UNAVAILABLE",
+    "threshold": "PASS",
+    "check_ids": [
+     "operational.latency"
+    ]
+   },
+   {
+    "rule_id": "must_pass:operational.model_file_safety",
+    "name": "Must-pass check 'operational.model_file_safety' did not pass",
+    "kind": "blocking",
+    "effect": "HOLD",
+    "reason": "Check 'operational.model_file_safety' is FAIL; it must PASS before promotion (The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.).",
+    "observed": "FAIL",
+    "threshold": "PASS",
+    "check_ids": [
+     "operational.model_file_safety"
+    ]
+   }
+  ],
+  "summary": "ROLLBACK recommended: a critical rule overrides the score. MQS 99.9 (not reliable: no score for model behaviour and operational readiness; overall evidence 33% is below the required 80%; at worst 24.0 if missing checks had failed). Reason(s): Model artifact cannot be loaded; Model file references dangerous code."
+ },
+ "explanations": [
+  "Decision: ROLLBACK recommended: a critical rule overrides the score. MQS 99.9 (not reliable: no score for model behaviour and operational readiness; overall evidence 33% is below the required 80%; at worst 24.0 if missing checks had failed). Reason(s): Model artifact cannot be loaded; Model file references dangerous code.",
+  "Why (critical): Model artifact cannot be loaded: check 'operational.model_loadable' is FAIL (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.).",
+  "Why (critical): Model file references dangerous code: check 'operational.model_file_safety' is FAIL (The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.).",
+  "Why (evidence): Required checks have no evidence: behaviour.f1, behaviour.roc_auc, fairness.selection_rate_ratio, operational.input_schema.",
+  "Why (evidence): Overall evidence coverage 33% is below the required 80%.",
+  "Why (blocking): Check 'training_validity.overfit_gap' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)).",
+  "Why (blocking): Check 'calibration.ece' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)).",
+  "Why (blocking): Check 'operational.latency' is UNAVAILABLE; it must PASS before promotion (Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)).",
+  "Why (blocking): Check 'operational.model_file_safety' is FAIL; it must PASS before promotion (The model file references dangerous code that loading would run: nt.write. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.).",
+  "Override: critical rule(s) force ROLLBACK (Model artifact cannot be loaded, Model file references dangerous code) although the MQS of 99.9 is above the promote threshold of 75. A good score cannot outweigh a critical failure.",
+  "Weakest checks (MQS points lost): training_validity.train_eval_overlap (-0.1).",
+  "Evidence gap (not counted as passing): training_validity.overfit_gap is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): behaviour.f1 is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): behaviour.roc_auc is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): behaviour.precision is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): behaviour.recall is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): behaviour.subgroup_f1_gap is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): fairness.selection_rate_ratio is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): fairness.equalized_odds is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): calibration.ece is UNAVAILABLE. Cannot evaluate: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): operational.input_schema is UNAVAILABLE. Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): operational.prediction_determinism is UNAVAILABLE. Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): operational.malformed_input_handling is UNAVAILABLE. Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): operational.latency is UNAVAILABLE. Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence gap (not counted as passing): operational.memory is UNAVAILABLE. Model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.).",
+  "Evidence gap (not counted as passing): operational.cpu_time is UNAVAILABLE. Cannot test: model could not be loaded (the model file was NOT loaded: the safety scan found dangerous code references (nt.write) that loading would execute.)",
+  "Evidence note: these results rely on declared (unverified) producer metadata: training_validity.train_eval_overlap, training_validity.train_duplicate_rows, operational.dependency_match.",
+  "Evidence note: the MQS is not reliable: no score for model behaviour and operational readiness; overall evidence 33% is below the required 80%.",
+  "Suggested action (operational.model_loadable): Check the model path, and that it was saved with joblib or pickle in a compatible environment.",
+  "Suggested action (operational.model_file_safety): Do not load this file. Re-export the model from its trusted training environment; if its code is trusted, add its module to model_safety.allowed_module_prefixes and review it.",
+  "Suggested action (required_evidence_missing): Supply the missing inputs (metadata, target and positive label, sensitive columns) so the required checks can run.",
+  "Suggested action (overall_coverage_below_minimum): Supply more of the inputs the checks need; coverage rises as checks gain evidence.",
+  "These suggestions are starting points, not guarantees."
+ ]
+}

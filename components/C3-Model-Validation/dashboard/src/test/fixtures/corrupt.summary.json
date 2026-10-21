@@ -1,0 +1,71 @@
+{
+ "run_id": "2a9c7673357743cfb94614f0ff3aacb7",
+ "candidate_id": "corrupt",
+ "profile": "extended",
+ "decision": "ROLLBACK",
+ "action_mode": "RECOMMENDATION",
+ "summary": "ROLLBACK recommended: a critical rule overrides the score. MQS 99.9 (not reliable: no score for model behaviour and operational readiness; overall evidence 31% is below the required 80%; at worst 24.0 if missing checks had failed). Reason(s): Model artifact cannot be loaded.",
+ "mqs": null,
+ "mqs_lower_bound": 23.97577142373252,
+ "mqs_sufficient_evidence": false,
+ "overall_coverage": 0.30666666666666664,
+ "provisional": true,
+ "dimension_scores": {
+  "training_validity": 99.8990475988855,
+  "model_behaviour": null,
+  "operational_readiness": null
+ },
+ "triggered_rules": [
+  {
+   "rule_id": "model_not_loadable",
+   "kind": "critical",
+   "effect": "ROLLBACK",
+   "reason": "Model artifact cannot be loaded: check 'operational.model_loadable' is FAIL (cannot load model: it could not be parsed safely and was not loaded (not a readable pickle stream: EOFError: ))."
+  },
+  {
+   "rule_id": "required_evidence_missing",
+   "kind": "evidence",
+   "effect": "HOLD",
+   "reason": "Required checks have no evidence: behaviour.f1, behaviour.roc_auc, fairness.selection_rate_ratio, operational.input_schema, operational.model_file_safety."
+  },
+  {
+   "rule_id": "overall_coverage_below_minimum",
+   "kind": "evidence",
+   "effect": "HOLD",
+   "reason": "Overall evidence coverage 31% is below the required 80%."
+  },
+  {
+   "rule_id": "must_pass:training_validity.overfit_gap",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'training_validity.overfit_gap' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (cannot load model: it could not be parsed safely and was not loaded (not a readable pickle stream: EOFError: )))."
+  },
+  {
+   "rule_id": "must_pass:calibration.ece",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'calibration.ece' is UNAVAILABLE; it must PASS before promotion (Cannot evaluate: model could not be loaded (cannot load model: it could not be parsed safely and was not loaded (not a readable pickle stream: EOFError: )))."
+  },
+  {
+   "rule_id": "must_pass:operational.latency",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'operational.latency' is UNAVAILABLE; it must PASS before promotion (Cannot test: model could not be loaded (cannot load model: it could not be parsed safely and was not loaded (not a readable pickle stream: EOFError: )))."
+  },
+  {
+   "rule_id": "must_pass:operational.model_file_safety",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "Check 'operational.model_file_safety' is UNAVAILABLE; it must PASS before promotion (The model file could not be scanned: not a readable pickle stream: EOFError: . It is not counted as safe.)."
+  }
+ ],
+ "check_counts": {
+  "PASS": 8,
+  "UNAVAILABLE": 16,
+  "FAIL": 1
+ },
+ "created_at_utc": "2026-10-20T06:47:50.979202Z",
+ "result_url": "/v1/validations/2a9c7673357743cfb94614f0ff3aacb7",
+ "report_url": "/v1/validations/2a9c7673357743cfb94614f0ff3aacb7/report",
+ "notice": "This is a recommendation only. Nothing was deployed, promoted or rolled back."
+}

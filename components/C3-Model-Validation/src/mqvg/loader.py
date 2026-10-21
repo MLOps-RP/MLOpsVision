@@ -21,6 +21,8 @@ import joblib
 import pandas as pd
 import yaml
 
+from mqvg.config import ModelSafetyConfig
+from mqvg.model_safety import DANGEROUS, UNRECOGNISED, ScanError, ScanReport, scan_model_file
 from mqvg.schemas import CandidateBundle, TrainingMetadata
 
 BYTES_PER_MB = 1024 * 1024
@@ -35,7 +37,12 @@ CORRUPT = "corrupt"
 NOT_A_MODEL = "not_a_model"
 UNSUPPORTED_FORMAT = "unsupported_format"
 MISSING_DEPENDENCY = "missing_dependency"
-CANNOT_ASSESS = {UNSUPPORTED_FORMAT, MISSING_DEPENDENCY}
+# Set only when the file-safety scan is on. BLOCKED_UNSAFE: the scan found dangerous
+# code references, so the file was not loaded. BLOCKED_REVIEW: it found code the
+# allowlist does not recognise (or could not scan the file), so a person must decide.
+BLOCKED_UNSAFE = "blocked_unsafe"
+BLOCKED_REVIEW = "blocked_review"
+CANNOT_ASSESS = {UNSUPPORTED_FORMAT, MISSING_DEPENDENCY, BLOCKED_REVIEW}
 
 SUPPORTED_SUFFIXES = (".joblib", ".pkl", ".pickle")
 # Formats the gate refuses to load (and never executes).
@@ -59,6 +66,8 @@ class LoadedCandidate:
     model_size_bytes: int | None = None
     model_sha256: str | None = None
     memory_delta_mb: float | None = None
+    safety_scan: ScanReport | None = None     # set when the file-safety scan ran
+    safety_error: str | None = None           # set when it ran but could not read the file
     eval_df: pd.DataFrame | None = None
     eval_error: str | None = None
     eval_sha256: str | None = None
@@ -182,7 +191,45 @@ def _classify_load_error(exc: BaseException) -> tuple[str, str]:
     return CORRUPT, f"cannot load model: {_describe(exc)}"
 
 
-def _load_model(candidate: LoadedCandidate) -> None:
+def _safety_gate(candidate: LoadedCandidate, safety: ModelSafetyConfig, path: Path) -> bool:
+    """Scan the file without executing it. True means: do not load it.
+
+    Records the outcome on the candidate. A file the scanner cannot parse is
+    never handed to the real loader, because a file one parser rejects and
+    another accepts is exactly what an attacker looks for.
+    """
+    try:
+        report = scan_model_file(path, safety)
+    except ScanError as exc:
+        candidate.safety_error = str(exc)
+        if safety.refuse_at == "never":
+            return False
+        if exc.parse:
+            _fail(candidate, CORRUPT, f"cannot load model: it could not be parsed safely "
+                                      f"and was not loaded ({exc})")
+        else:
+            _fail(candidate, BLOCKED_REVIEW, f"the model file was not loaded because the "
+                  f"safety scan could not read it ({exc}). This says nothing about the "
+                  "model's quality.")
+        return True
+    candidate.safety_scan = report
+    refuse = {"dangerous": DANGEROUS, "unrecognised": UNRECOGNISED}.get(safety.refuse_at)
+    if refuse is None or report.severity < refuse:
+        return False
+    if report.dangerous:
+        _fail(candidate, BLOCKED_UNSAFE, (
+            "the model file was NOT loaded: the safety scan found dangerous code "
+            f"references ({', '.join(report.dangerous[:6])}) that loading would execute."))
+    else:
+        _fail(candidate, BLOCKED_REVIEW, (
+            "the model file was not loaded: it references code the allowlist does not "
+            f"recognise ({', '.join(report.unrecognised[:6])}), which loading would "
+            "execute. If you trust it, add its module to model_safety.allowed_module_prefixes. "
+            "This says nothing about the model's quality."))
+    return True
+
+
+def _load_model(candidate: LoadedCandidate, safety: ModelSafetyConfig | None = None) -> None:
     path = candidate.bundle.model_path
     if not path.is_file():
         _fail(candidate, NOT_FOUND, f"model artifact not found: {path}")
@@ -202,6 +249,9 @@ def _load_model(candidate: LoadedCandidate) -> None:
             "supported: the gate loads Python models saved with joblib or "
             f"pickle ({', '.join(SUPPORTED_SUFFIXES)}). This says nothing "
             "about the model's quality."))
+        return
+
+    if safety is not None and _safety_gate(candidate, safety, path):
         return
 
     gc.collect()
@@ -234,10 +284,15 @@ def _load_model(candidate: LoadedCandidate) -> None:
         candidate.memory_delta_mb = max(0.0, after - before)
 
 
-def load_candidate(bundle: CandidateBundle) -> LoadedCandidate:
-    """Load every part of a candidate; problems are recorded, never raised."""
+def load_candidate(bundle: CandidateBundle,
+                   safety: ModelSafetyConfig | None = None) -> LoadedCandidate:
+    """Load every part of a candidate; problems are recorded, never raised.
+
+    With `safety`, the model file is scanned (not executed) first and is not
+    loaded if the scan refuses it. Without it, behaviour is unchanged.
+    """
     candidate = LoadedCandidate(bundle=bundle)
     _load_eval(candidate)
     _load_metadata(candidate)
-    _load_model(candidate)
+    _load_model(candidate, safety)
     return candidate

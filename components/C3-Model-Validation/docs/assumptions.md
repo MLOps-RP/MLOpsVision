@@ -332,3 +332,147 @@ Full description, evaluation and limitations: `docs/hidden_groups.md`; results:
   gradient-boosting models was 7.5% (6 of 80) against the nominal 5%; BH under
   dependent tests is plausible but not proven; real-data validation (beyond one
   observation on the Adult `biased` fixture) is missing.
+
+## Extended checks (separate profile)
+
+Full description: `docs/extended_checks.md`. Decisions made while building them:
+
+- **Off by default.** Four more checks would change every model's TVS, ORS and MQS and break
+  the hand-computed scoring tests, so `default.yaml` lists them disabled and
+  `configs/extended.yaml` enables them. **OPEN:** whether any belongs in the default profile.
+- **The safety scan runs before loading, and an unparseable file is not loaded.** A scan that
+  ran after loading would be useless, and a file the scanner rejects but joblib accepts is the
+  case an attacker wants. A corrupt file therefore still gives the load failure and ROLLBACK it
+  gave before; a file the scanner cannot handle goes to review (UNAVAILABLE, HOLD).
+- **`refuse_at` defaults to `unrecognised`** in the extended profile: any code outside the
+  allowlist is not loaded until a person adds its module to `allowed_module_prefixes`.
+  **OPEN:** the allow and block lists are heuristics and need review before real use.
+- **Conflicting labels are evaluation-only.** The gate receives no training labels. The sample
+  data has no repeated feature rows, so the check cannot show a non-zero natural value; the
+  planted fixture is the only evidence it detects anything. **OPEN:** a near-duplicate
+  (tolerance) match for continuous features.
+- **Training duplicates only lower the score** (they are an upstream data-quality matter),
+  while label conflicts and unrecognised code are must-pass.
+- **CPU time on Windows:** the process-CPU clock ticks in about 15.6 ms steps, which is why
+  the check predicts for at least 0.3 s. A test that spun on that clock measured the burn
+  itself in quantised steps; the tests now spin on the wall clock.
+- Placeholder thresholds were not tuned to make a fixture warn.
+
+## HTTP API
+
+Full description: `docs/api.md`. Decisions made while building it:
+
+- **A path-loading endpoint is a code-execution surface**, so the API is restrictive by default
+  rather than convenient: paths confined to one artifact root (symlinks and junctions that
+  escape are rejected), profiles chosen by name, only profiles that scan the model file before
+  loading it, API key required (fail closed), loopback binding unless a key is set.
+  **OPEN:** this limits risk; it does not make validating untrusted models safe.
+- **Missing files are request errors (422), unlike the library**, where a missing artifact is a
+  finding. In a request/response setting a typo in a path should not look like a verdict.
+- **Synchronous, one at a time.** Latency and CPU are timings, so validations are serialised.
+  **OPEN:** an asynchronous job interface for long validations.
+- **A subgroup-detecting profile that scans files was added** (`extended_hidden_groups`), because
+  `hidden_groups` does not scan and so cannot be served by default.
+- **No new validation logic**: the API calls `validate_and_report`; a test checks it gives the
+  same decision and rules as a direct call.
+- **Contract:** `docs/api_openapi.json` is generated and checked by a test. Stability within `/v1`
+  is an intention, not yet exercised by a real client.
+
+## Dashboard
+
+Full description: `dashboard/README.md`. Decisions made while building it:
+
+- **Display only.** It adds no validation logic and no deployment control; it renders what the API returns,
+  and states on every run that the decision is a recommendation.
+- **A score that cannot be quoted is shown as `n/a`.** The API records an MQS even for a run with too little
+  evidence (for example a model that would not load: 99.9 from the one layer that had checks). The dashboard
+  shows `n/a`, marks the recorded arithmetic "not reliable" and shows the worst case beside it.
+- **The key is typed in and kept for the tab (sessionStorage), never built in.** Same-origin proxy (`/api`)
+  instead of CORS, so the API stays on loopback. **OPEN:** a deployment needs one origin (reverse proxy) or
+  a deliberate CORS setting; there is no sign-in beyond the shared key.
+- Types are generated from `docs/api_openapi.json`, so contract drift is a compile error.
+- Tests use real results from the real API as fixtures (machine path replaced), and the MQS arithmetic is
+  checked for exact parity with the report the gate writes.
+
+## Dashboard v2 (Tailwind, Recharts) and the API additions it needed
+
+Full description: `dashboard/README.md` and `docs/api.md`. Decisions made while building it:
+
+- **The brief asked for model and data upload; the API had none.** A model file is code, so uploads were added as
+  **opt-in and off by default** (`MQVG_ALLOW_UPLOADS`). Nothing about the default behaviour changed, and every
+  existing restriction still applies to an uploaded model (scanning profiles only, scan before load, key required,
+  confined to the artifact root, server-chosen file names). When uploads are off the dashboard says so and the
+  path-based form still works. **OPEN:** there is no retention or delete for uploaded files.
+- **One committed test was changed deliberately:** `test_the_api_has_no_deployment_surface` pinned the single POST
+  route; it now pins the two (`/v1/validations`, `/v1/uploads`). It still asserts there is no deploy, promote,
+  rollback or rollout route, and only GET and POST exist.
+- **The study reports are served, not run.** The comparison and sensitivity helper scripts now also write JSON
+  (`docs/baseline_comparison.json`, `docs/sensitivity_analysis.json`) so the dashboard can chart real numbers rather
+  than parse Markdown. The dashboard shows a study as unavailable (with the script to run) when the file is missing
+  and refuses to chart a file whose structure it does not recognise.
+- **Hidden failure analysis shows only what a run recorded.** If a run's profile did not include the check, the page
+  says so; it never implies "no subgroups". A check that could not run is shown as not assessed (never a pass).
+- **A real bug class was found by testing, not by review:** a hook that set `loading` in an effect left one committed
+  render with the previous result for new dependencies, so a page could flash the wrong state (for example "No
+  validations yet", or the "uploads unavailable" tab) the instant a connection became ready. `useAsync` now derives
+  `loading` from the dependencies during render. Two further bugs of the same family (an endless skeleton on an unknown
+  run) were fixed and are covered by tests.
+- **Not done:** the API still has no TLS, rate limiting or per-user credentials; there is no job queue for long
+  validations; the dashboard has not been audited with assistive technology or tested in browsers other than Chromium.
+
+## Validate Model page: registered models and explained profiles
+
+- **Models come from an explicit catalogue (`candidates.yaml`), not from guessing.** Pairing a model with its evaluation
+  data, metadata and training hashes by file name would be a guess, so each pairing is declared once and tests check it
+  against the fixture manifests, the metadata's own declared hash file, the evaluation columns and the model's features.
+  The dashboard shows "Model 1, 2, …" by position in the server's list, so a number can change if the list is reordered;
+  the file name and description are shown beside it.
+- **Target column, positive label and sensitive columns are no longer entered.** The dashboard omits them, so the
+  backend's defaults and the metadata file decide, exactly as for an API call that omits them.
+- **The dashboard no longer uploads.** `POST /v1/uploads` remains (opt-in, off by default) but the page does not use it.
+- **Profile explanations are generated from each profile's configuration.** Strictness is a rule of thumb (see
+  `docs/api.md`), not a measured property. Restricted profiles are hidden from the choices and explained; the server
+  remains the authority and still rejects them.
+- **`suggested_profile`** only preselects a profile (if the server allows it); the user can change it.
+- **The long security paragraph was removed from the page.** No security control was changed; the security notes remain
+  in `docs/api.md` and `dashboard/README.md`.
+
+## Friendly model names on every page
+
+- **One name per model, everywhere.** "Model N" is the model's position in the server's list (`GET /v1/candidates`). Every
+  page (Dashboard, Validate Model, Results, History, Comparison, Hidden Failure Analysis, Reports, including the
+  baseline and sensitivity tables) shows that name instead of the technical id. Only display changed: requests, stored
+  results, CSV `candidate` column, report contents and file mapping still use the original ids and paths.
+- A run whose id is not in the list (or when the list cannot be loaded) shows its stored id; no name is invented.
+- Because the number is a position, reordering `candidates.yaml` renumbers the models. History search matches both the
+  friendly name and the original id.
+- **Report headings use the friendly name too.** The report preview (Reports page and the Results "Report" tab) and the
+  downloaded `.md` show `Model Quality Validation Report: Model N` and `Candidate | Model N` in the details table. Only
+  those two lines are rewritten, and only when they hold exactly the model's id; the gate's report on disk and the
+  `/v1/validations/{id}/report` response are unchanged, as is the JSON download. The heading is shown as the gate writes
+  it (without added quotes).
+
+## PDF download of validation reports
+
+- **The PDF is generated in the browser from the report the API already returns** (`GET /v1/validations/{id}/report`),
+  using `jspdf` and `jspdf-autotable` (loaded only when "Download PDF" is clicked), plus `unified` and `remark-parse`
+  to read the Markdown. No backend change, and no data is sent anywhere. The report's headings, tables, lists and text
+  are drawn as they are; the PDF adds only a cover block (title, candidate name, the run's validation date and run id,
+  and the time the PDF was created) and a footer with the model name and "Page X of Y". Sections the report does not
+  contain (for example hidden groups for a profile that does not run them) are not added.
+- Validation reports download as PDF on the Reports page and on the Results "Report" tab. Study reports still download
+  as Markdown. The JSON download is unchanged.
+- **Limits:** the PDF uses built-in fonts, which cover Western European text; a few symbols are written in ASCII
+  (`->`, `>=`) and any other character is printed as `?`. The text and structure were checked by parsing the PDFs (in
+  tests and with `pypdf`); the layout was not inspected visually in a PDF viewer. The file name is
+  `<display name>-Validation-Report.pdf`, so two runs of one model download under the same name.
+
+## Hidden pages and the application name
+
+- **Model Comparison and the study reports are hidden, not removed.** The route, the navigation link and the "Study
+  reports" tab are gone, so `/comparison` shows "Page not found" and `/reports?tab=studies` shows the validation reports.
+  `pages/Comparison.tsx`, the `StudyReports` component, the study parsers, the API client's study calls and the backend
+  `/v1/studies` endpoints and data are unchanged, and their tests still run against the components directly. To show them
+  again, restore the route in `App.tsx`, the entry in `Layout.tsx` and the tab in `Reports.tsx`. The dashboard now has six pages.
+- **The application is named "Validation Gate"** (sidebar, browser tab title, page description, PDF properties). The
+  internal `c3.apiKey` storage key is not shown to users and was left as it is so saved keys keep working.

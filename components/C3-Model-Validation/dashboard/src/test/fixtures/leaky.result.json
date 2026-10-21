@@ -1,0 +1,2087 @@
+{
+ "schema_version": "0.1.0",
+ "gate_version": "0.1.0",
+ "run_id": "bacacee0deb44c22ba9b7d96fb274362",
+ "created_at_utc": "2026-10-20T06:47:46.454475Z",
+ "candidate": {
+  "candidate_id": "leaky",
+  "model_path": "C:\\artifacts\\fixtures\\leaky\\model.joblib",
+  "model_sha256": "183c972dd6dd92e42f37c8d7bfd5c2607d4669a9c544fa06462e147d904f8d2f",
+  "eval_data_sha256": "82978003eb358605cafc3b40bf7a573007180b15f9df2df3b41f8cd906f5db83",
+  "metadata_sha256": "1e6ebbd2878fbbf361293f208a5e8daf4e49aa462e0cb6aaa59d43f8695e4cfb"
+ },
+ "scenario": {
+  "mode": "real",
+  "name": null,
+  "description": null,
+  "simulated_inputs": []
+ },
+ "config_hash": "e5cd88eaccee847a641f880954e58a1a4d203197483052cf7df2781130923bc7",
+ "config_snapshot": {
+  "profile": "extended",
+  "description": "Default checks plus conflicting labels, training duplicates, model-file safety and CPU time.",
+  "weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "missing_policy": "exclude_and_cap",
+  "coverage": {
+   "min_dimension": 0.5,
+   "min_overall": 0.8
+  },
+  "decision": {
+   "promote_at": 75.0,
+   "reject_below": 50.0,
+   "must_pass_checks": [
+    "training_validity.metadata_completeness",
+    "training_validity.overfit_gap",
+    "calibration.ece",
+    "operational.latency",
+    "training_validity.eval_label_conflicts",
+    "operational.model_file_safety"
+   ]
+  },
+  "critical_rules": [
+   {
+    "id": "model_not_loadable",
+    "name": "Model artifact cannot be loaded",
+    "description": null,
+    "condition": {
+     "check": "operational.model_loadable",
+     "status_in": [
+      "FAIL",
+      "ERROR"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "target_leakage",
+    "name": "Target leakage detected",
+    "description": null,
+    "condition": {
+     "check": "leakage.single_feature_predictiveness",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "severe_selection_rate_disparity",
+    "name": "Severe selection-rate disparity between groups",
+    "description": null,
+    "condition": {
+     "check": "fairness.selection_rate_ratio",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "performance_below_minimum",
+    "name": "F1 below the absolute minimum",
+    "description": null,
+    "condition": {
+     "check": "behaviour.f1",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   },
+   {
+    "id": "unsafe_model_file",
+    "name": "Model file references dangerous code",
+    "description": null,
+    "condition": {
+     "check": "operational.model_file_safety",
+     "status_in": [
+      "FAIL"
+     ],
+     "value_above": null,
+     "value_below": null
+    }
+   }
+  ],
+  "evaluation": {
+   "random_seed": 42,
+   "min_group_size": 30,
+   "ece_bins": 10,
+   "latency_warmup_runs": 5,
+   "latency_repeats": 50,
+   "robustness_noise_scale": 0.1,
+   "robustness_repeats": 5,
+   "leakage_max_rows": 20000,
+   "leakage_cv_folds": 5,
+   "cpu_min_seconds": 0.3,
+   "cpu_max_rounds": 200,
+   "cpu_sample_rows": 1000
+  },
+  "hidden_groups": {
+   "methods": [
+    "tree",
+    "kmeans"
+   ],
+   "folds": 2,
+   "tree_depth": 3,
+   "tree_min_leaf_fraction": 0.03,
+   "kmeans_clusters": 8,
+   "kmeans_weighting": "residual",
+   "min_group_rows": 30,
+   "min_group_fraction": 0.02,
+   "alpha": 0.05,
+   "min_effect": 0.1,
+   "min_rows": 1000,
+   "min_errors": 50,
+   "recalibrate": true,
+   "recalibration_trigger_ece": 0.03,
+   "max_ece": 0.15,
+   "max_overall_gap": 0.15,
+   "max_categories": 20,
+   "exclude_features": [],
+   "extra_columns": [],
+   "report_groups": 10,
+   "consequence": "score_only",
+   "require_assessment": false
+  },
+  "model_safety": {
+   "refuse_at": "unrecognised",
+   "allowed_module_prefixes": [
+    "sklearn",
+    "numpy",
+    "scipy",
+    "pandas",
+    "joblib",
+    "xgboost",
+    "lightgbm",
+    "collections",
+    "copyreg",
+    "_codecs",
+    "datetime",
+    "decimal",
+    "fractions"
+   ],
+   "allowed_builtins": [
+    "list",
+    "dict",
+    "set",
+    "frozenset",
+    "tuple",
+    "object",
+    "int",
+    "float",
+    "str",
+    "bool",
+    "bytes",
+    "bytearray",
+    "complex",
+    "slice",
+    "range"
+   ],
+   "blocked_module_prefixes": [
+    "os",
+    "posix",
+    "nt",
+    "subprocess",
+    "socket",
+    "shutil",
+    "sys",
+    "ctypes",
+    "importlib",
+    "runpy",
+    "pty",
+    "marshal",
+    "pickle",
+    "_pickle",
+    "webbrowser",
+    "http",
+    "urllib",
+    "ftplib",
+    "smtplib",
+    "multiprocessing",
+    "threading",
+    "asyncio",
+    "signal",
+    "code",
+    "codeop",
+    "commands",
+    "popen2",
+    "platform",
+    "tempfile",
+    "glob",
+    "numpy.f2py",
+    "numpy.distutils",
+    "numpy.testing",
+    "pandas.io",
+    "pandas.read_pickle",
+    "sklearn.datasets",
+    "sklearn.externals"
+   ],
+   "blocked_globals": [
+    "joblib.load",
+    "joblib.numpy_pickle.load",
+    "numpy.load",
+    "numpy.fromfile",
+    "numpy.memmap",
+    "numpy.lib.npyio.load"
+   ],
+   "blocked_builtins": [
+    "eval",
+    "exec",
+    "compile",
+    "__import__",
+    "open",
+    "getattr",
+    "setattr",
+    "delattr",
+    "globals",
+    "locals",
+    "vars",
+    "input",
+    "breakpoint"
+   ]
+  },
+  "metadata": {
+   "required_fields": [
+    "model_type",
+    "task_type",
+    "target_column",
+    "positive_label",
+    "sensitive_columns",
+    "feature_columns",
+    "hyperparameters",
+    "training_metrics",
+    "train_rows",
+    "dataset"
+   ],
+   "reproducibility_fields": [
+    "random_state",
+    "split.seed",
+    "versions",
+    "train_data_sha256",
+    "code.commit"
+   ]
+  },
+  "checks": {
+   "training_validity.metadata_completeness": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.9,
+     "fail_at": 0.6,
+     "floor": 0.0
+    }
+   },
+   "training_validity.reproducibility_info": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.75,
+     "fail_at": 0.5,
+     "floor": 0.0
+    }
+   },
+   "training_validity.overfit_gap": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.1,
+     "floor": 0.25
+    }
+   },
+   "training_validity.train_eval_overlap": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.01,
+     "fail_at": 0.05,
+     "floor": 0.2
+    }
+   },
+   "training_validity.eval_label_conflicts": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.005,
+     "fail_at": 0.03,
+     "floor": 0.15
+    }
+   },
+   "training_validity.train_duplicate_rows": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.01,
+     "fail_at": 0.1,
+     "floor": 0.3
+    }
+   },
+   "leakage.single_feature_predictiveness": {
+    "enabled": true,
+    "weight": 3.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.9,
+     "fail_at": 0.95,
+     "floor": 1.0
+    }
+   },
+   "behaviour.f1": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.6,
+     "fail_at": 0.45,
+     "floor": 0.0
+    }
+   },
+   "behaviour.roc_auc": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.95,
+     "pass_at": 0.85,
+     "fail_at": 0.7,
+     "floor": 0.5
+    }
+   },
+   "behaviour.precision": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.85,
+     "pass_at": 0.65,
+     "fail_at": 0.45,
+     "floor": 0.0
+    }
+   },
+   "behaviour.recall": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.8,
+     "pass_at": 0.55,
+     "fail_at": 0.35,
+     "floor": 0.0
+    }
+   },
+   "behaviour.subgroup_f1_gap": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.02,
+     "pass_at": 0.1,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "fairness.selection_rate_ratio": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.9,
+     "pass_at": 0.5,
+     "fail_at": 0.2,
+     "floor": 0.0
+    }
+   },
+   "fairness.equalized_odds": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.02,
+     "pass_at": 0.1,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "calibration.ece": {
+    "enabled": true,
+    "weight": 1.5,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.1,
+     "floor": 0.25
+    }
+   },
+   "behaviour.hidden_failure_groups": {
+    "enabled": false,
+    "weight": 1.5,
+    "required": false,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.0,
+     "fail_at": 0.25,
+     "floor": 0.5
+    }
+   },
+   "robustness.noise_degradation": {
+    "enabled": false,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.01,
+     "pass_at": 0.05,
+     "fail_at": 0.15,
+     "floor": 0.4
+    }
+   },
+   "operational.model_loadable": {
+    "enabled": true,
+    "weight": 3.0,
+    "required": true,
+    "thresholds": null
+   },
+   "operational.input_schema": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": null
+   },
+   "operational.prediction_determinism": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": null
+   },
+   "operational.malformed_input_handling": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": null
+   },
+   "operational.artifact_size": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 10.0,
+     "pass_at": 100.0,
+     "fail_at": 500.0,
+     "floor": 2000.0
+    }
+   },
+   "operational.latency": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": false,
+    "thresholds": {
+     "target": 10.0,
+     "pass_at": 50.0,
+     "fail_at": 200.0,
+     "floor": 1000.0
+    }
+   },
+   "operational.memory": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 100.0,
+     "pass_at": 500.0,
+     "fail_at": 2000.0,
+     "floor": 8000.0
+    }
+   },
+   "operational.dependency_match": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 1.0,
+     "pass_at": 0.8,
+     "fail_at": 0.5,
+     "floor": 0.0
+    }
+   },
+   "operational.model_file_safety": {
+    "enabled": true,
+    "weight": 2.0,
+    "required": true,
+    "thresholds": {
+     "target": 0.0,
+     "pass_at": 0.0,
+     "fail_at": 1.0,
+     "floor": 2.0
+    }
+   },
+   "operational.cpu_time": {
+    "enabled": true,
+    "weight": 1.0,
+    "required": false,
+    "thresholds": {
+     "target": 0.05,
+     "pass_at": 0.5,
+     "fail_at": 3.0,
+     "floor": 10.0
+    }
+   }
+  }
+ },
+ "environment": {
+  "machine": {
+   "platform": "Windows-11-10.0.26200-SP0",
+   "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+   "cpu_count": 12,
+   "ram_gb": 15.6,
+   "versions": {
+    "python": "3.12.1",
+    "scikit_learn": "1.9.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4",
+    "joblib": "1.6.0"
+   }
+  },
+  "timings_seconds": {
+   "load": 0.06068999999843072,
+   "training_validity": 0.40652430000773165,
+   "model_behaviour": 0.007559399993624538,
+   "operational_readiness": 0.53386209999735,
+   "score_and_decide": 0.0002842999965650961
+  }
+ },
+ "checks": [
+  {
+   "id": "training_validity.metadata_completeness",
+   "dimension": "training_validity",
+   "name": "Share of required training-metadata fields present",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.9,
+    "fail_at": 0.6,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "10 of 10 required training-metadata fields are present.",
+   "details": {
+    "missing": [],
+    "present": [
+     "model_type",
+     "task_type",
+     "target_column",
+     "positive_label",
+     "sensitive_columns",
+     "feature_columns",
+     "hyperparameters",
+     "training_metrics",
+     "train_rows",
+     "dataset"
+    ],
+    "note": "Presence is checked; the values are not verified."
+   }
+  },
+  {
+   "id": "training_validity.reproducibility_info",
+   "dimension": "training_validity",
+   "name": "Share of reproducibility fields present (seed, versions, hashes, commit)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.75,
+    "fail_at": 0.5,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "5 of 5 reproducibility fields are present.",
+   "details": {
+    "missing": [],
+    "present": [
+     "random_state",
+     "split.seed",
+     "versions",
+     "train_data_sha256",
+     "code.commit"
+    ],
+    "note": "Presence is checked; the values are not verified."
+   }
+  },
+  {
+   "id": "training_validity.overfit_gap",
+   "dimension": "training_validity",
+   "name": "Train accuracy minus eval accuracy (needs train metrics)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": 0.0006832354682551056,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.01,
+    "pass_at": 0.05,
+    "fail_at": 0.1,
+    "floor": 0.25
+   },
+   "required": false,
+   "message": "Declared training accuracy 0.978 vs measured evaluation accuracy 0.978: gap +0.001. The training value is the producer's claim and was not verified.",
+   "details": {
+    "metric": "accuracy",
+    "declared_train_value": 0.9784678382528579,
+    "measured_eval_value": 0.9777846027846028,
+    "measured_eval_metrics": {
+     "accuracy": 0.9777846027846028,
+     "f1": 0.9540351620419403
+    },
+    "declared_training_metrics": {
+     "accuracy": 0.9784678382528579,
+     "f1": 0.9552894494437753
+    }
+   }
+  },
+  {
+   "id": "training_validity.train_eval_overlap",
+   "dimension": "training_validity",
+   "name": "Eval rows that also appear in training data (needs row hashes)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 99.38574938574938,
+   "raw_value": 0.0012285012285012285,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.01,
+    "fail_at": 0.05,
+    "floor": 0.2
+   },
+   "required": false,
+   "message": "12 of 9768 evaluation rows (0.12%) also appear in the training row hashes. Datasets can contain genuine duplicate records (0.03% of evaluation rows duplicate another evaluation row), so a small overlap is not by itself leakage. The hashes are producer-supplied.",
+   "details": {
+    "overlap_rows": 12,
+    "eval_rows": 9768,
+    "train_hashes": 29288,
+    "eval_internal_duplicate_fraction": 0.00030712530712528885,
+    "hash_file": "C:\\artifacts\\data\\train_row_hashes.txt",
+    "hashed_columns": [
+     "age",
+     "workclass",
+     "fnlwgt",
+     "education",
+     "education-num",
+     "marital-status",
+     "occupation",
+     "relationship",
+     "race",
+     "sex",
+     "capital-gain",
+     "capital-loss",
+     "hours-per-week",
+     "native-country"
+    ]
+   }
+  },
+  {
+   "id": "leakage.single_feature_predictiveness",
+   "dimension": "training_validity",
+   "name": "Highest ROC AUC reached by any single feature on eval data",
+   "status": "FAIL",
+   "evidence_source": "MEASURED",
+   "score": 16.070959373087337,
+   "raw_value": 0.9678580812538253,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.9,
+    "fail_at": 0.95,
+    "floor": 1.0
+   },
+   "required": true,
+   "message": "The strongest single feature, 'prior_high_income_flag', reaches a cross-validated ROC AUC of 0.968 on its own (13 features, 9768 rows). Values near 1.0 suggest the feature leaks the label.",
+   "details": {
+    "top_feature": "prior_high_income_flag",
+    "top_features": {
+     "prior_high_income_flag": 0.9678580812538253,
+     "relationship": 0.772365756400908,
+     "marital-status": 0.764019537439494,
+     "education-num": 0.7088042684179259,
+     "age": 0.6994257308444366
+    },
+    "all_features": {
+     "prior_high_income_flag": 0.9678580812538253,
+     "relationship": 0.772365756400908,
+     "marital-status": 0.764019537439494,
+     "education-num": 0.7088042684179259,
+     "age": 0.6994257308444366,
+     "occupation": 0.6916620499524163,
+     "education": 0.6725071628890225,
+     "hours-per-week": 0.6678876846563336,
+     "capital-gain": 0.601976725310886,
+     "workclass": 0.5801019644601394,
+     "capital-loss": 0.5497365089878082,
+     "fnlwgt": 0.526538203677513,
+     "native-country": 0.5175595222157096
+    },
+    "failed_features": {},
+    "not_assessed_columns": [],
+    "rows_used": 9768,
+    "sampled": false,
+    "cv_folds": 5,
+    "tree_depth": 4,
+    "positive_label": ">50K",
+    "caveat": "A legitimately strong feature also scores high; leakage spread over several features is not detected."
+   }
+  },
+  {
+   "id": "training_validity.eval_label_conflicts",
+   "dimension": "training_validity",
+   "name": "Evaluation rows whose features are identical to another row's but whose label differs",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.005,
+    "fail_at": 0.03,
+    "floor": 0.15
+   },
+   "required": false,
+   "message": "0 of 9768 evaluation rows (0.00%) share their feature values with a row that has a different label (0 conflicting groups among 2 groups of repeated feature values). Conflicting labels put a ceiling on the accuracy any model can reach and make the measured metrics unreliable.",
+   "details": {
+    "conflict_rows": 0,
+    "conflicting_groups": 0,
+    "repeated_groups": 2,
+    "rows_in_repeated_groups": 4,
+    "eval_rows": 9768,
+    "feature_columns": [
+     "age",
+     "workclass",
+     "fnlwgt",
+     "education",
+     "education-num",
+     "marital-status",
+     "occupation",
+     "relationship",
+     "capital-gain",
+     "capital-loss",
+     "hours-per-week",
+     "native-country",
+     "prior_high_income_flag"
+    ],
+    "caveat": "Only exact repeats of the feature values are found, so data with continuous features has little power; the gate cannot check the training labels, which it does not receive."
+   }
+  },
+  {
+   "id": "training_validity.train_duplicate_rows",
+   "dimension": "training_validity",
+   "name": "Training rows that duplicate another training row (from the supplied row hashes)",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 99.80663140533468,
+   "raw_value": 0.0005801057839959051,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.01,
+    "fail_at": 0.1,
+    "floor": 0.3
+   },
+   "required": false,
+   "message": "17 of 29305 training rows (0.06%) duplicate another training row. Duplicates can make a model look better on rows it has memorised and are often a data-quality problem upstream. The hashes are producer-supplied and cover the feature columns only, so rows with the same features and different labels also count as duplicates.",
+   "details": {
+    "duplicate_rows": 17,
+    "training_rows": 29305,
+    "distinct_rows": 29288,
+    "hash_file": "C:\\artifacts\\data\\train_row_hashes.txt",
+    "caveat": "The gate does not see the training data, only its row hashes."
+   }
+  },
+  {
+   "id": "behaviour.f1",
+   "dimension": "model_behaviour",
+   "name": "F1 on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.9540351620419404,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.6,
+    "fail_at": 0.45,
+    "floor": 0.0
+   },
+   "required": true,
+   "message": "F1 is 0.954 on 9768 evaluation rows (an always-positive baseline scores 0.386).",
+   "details": {
+    "confusion": {
+     "tp": 2252,
+     "fp": 132,
+     "fn": 85,
+     "tn": 7299
+    },
+    "precision": 0.9446308724832215,
+    "recall": 0.9636285836542576,
+    "f1": 0.9540351620419404,
+    "precision_undefined": false,
+    "n_rows": 9768,
+    "dropped_rows_missing_label": 0,
+    "positive_label": ">50K",
+    "positive_label_source": "declared in bundle or metadata",
+    "prevalence": 0.23925061425061425,
+    "baseline_always_positive": {
+     "precision": 0.23925061425061425,
+     "recall": 1.0,
+     "f1": 0.3861214374225526,
+     "roc_auc": 0.5
+    }
+   }
+  },
+  {
+   "id": "behaviour.roc_auc",
+   "dimension": "model_behaviour",
+   "name": "ROC AUC on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.9940681484030487,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.95,
+    "pass_at": 0.85,
+    "fail_at": 0.7,
+    "floor": 0.5
+   },
+   "required": true,
+   "message": "ROC AUC is 0.994 on 9768 evaluation rows (0.5 is chance).",
+   "details": {
+    "n_rows": 9768,
+    "score_source": "predict_proba",
+    "positive_label": ">50K",
+    "positive_label_source": "declared in bundle or metadata"
+   }
+  },
+  {
+   "id": "behaviour.precision",
+   "dimension": "model_behaviour",
+   "name": "Precision on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.9446308724832215,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.85,
+    "pass_at": 0.65,
+    "fail_at": 0.45,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "Precision is 0.945 on 9768 evaluation rows (an always-positive baseline scores 0.239).",
+   "details": {
+    "confusion": {
+     "tp": 2252,
+     "fp": 132,
+     "fn": 85,
+     "tn": 7299
+    },
+    "precision": 0.9446308724832215,
+    "recall": 0.9636285836542576,
+    "f1": 0.9540351620419404,
+    "precision_undefined": false,
+    "n_rows": 9768,
+    "dropped_rows_missing_label": 0,
+    "positive_label": ">50K",
+    "positive_label_source": "declared in bundle or metadata",
+    "prevalence": 0.23925061425061425,
+    "baseline_always_positive": {
+     "precision": 0.23925061425061425,
+     "recall": 1.0,
+     "f1": 0.3861214374225526,
+     "roc_auc": 0.5
+    }
+   }
+  },
+  {
+   "id": "behaviour.recall",
+   "dimension": "model_behaviour",
+   "name": "Recall on the evaluation data",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.9636285836542576,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.8,
+    "pass_at": 0.55,
+    "fail_at": 0.35,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "Recall is 0.964 on 9768 evaluation rows.",
+   "details": {
+    "confusion": {
+     "tp": 2252,
+     "fp": 132,
+     "fn": 85,
+     "tn": 7299
+    },
+    "precision": 0.9446308724832215,
+    "recall": 0.9636285836542576,
+    "f1": 0.9540351620419404,
+    "precision_undefined": false,
+    "n_rows": 9768,
+    "dropped_rows_missing_label": 0,
+    "positive_label": ">50K",
+    "positive_label_source": "declared in bundle or metadata",
+    "prevalence": 0.23925061425061425,
+    "baseline_always_positive": {
+     "precision": 0.23925061425061425,
+     "recall": 1.0,
+     "f1": 0.3861214374225526,
+     "roc_auc": 0.5
+    }
+   }
+  },
+  {
+   "id": "behaviour.subgroup_f1_gap",
+   "dimension": "model_behaviour",
+   "name": "Largest F1 difference between sufficiently large subgroups",
+   "status": "WARN",
+   "evidence_source": "MEASURED",
+   "score": 77.30509745127436,
+   "raw_value": 0.1289355322338831,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.02,
+    "pass_at": 0.1,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "Largest subgroup F1 gap is 0.129 for 'race': Amer-Indian-Eskimo 0.828 vs Other 0.957.",
+   "details": {
+    "min_group_size": 30,
+    "evaluated_columns": [
+     "race",
+     "sex"
+    ],
+    "skipped_columns": {},
+    "columns": {
+     "sex": {
+      "groups": {
+       "Female": {
+        "n": 3238,
+        "selection_rate": 0.11117974058060531,
+        "tpr": 0.9534883720930233,
+        "fpr": 0.0110573600552868,
+        "f1": 0.9318181818181818,
+        "tp": 328,
+        "fp": 32,
+        "fn": 16,
+        "tn": 2862
+       },
+       "Male": {
+        "n": 6530,
+        "selection_rate": 0.3099540581929556,
+        "tpr": 0.9653788258906172,
+        "fpr": 0.02204099625303064,
+        "f1": 0.9579288025889967,
+        "tp": 1924,
+        "fp": 100,
+        "fn": 69,
+        "tn": 4437
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     },
+     "race": {
+      "groups": {
+       "Amer-Indian-Eskimo": {
+        "n": 89,
+        "selection_rate": 0.1797752808988764,
+        "tpr": 0.9230769230769231,
+        "fpr": 0.05263157894736842,
+        "f1": 0.8275862068965517,
+        "tp": 12,
+        "fp": 4,
+        "fn": 1,
+        "tn": 72
+       },
+       "Asian-Pac-Islander": {
+        "n": 314,
+        "selection_rate": 0.2898089171974522,
+        "tpr": 0.9555555555555556,
+        "fpr": 0.022321428571428572,
+        "f1": 0.9502762430939227,
+        "tp": 86,
+        "fp": 5,
+        "fn": 4,
+        "tn": 219
+       },
+       "Black": {
+        "n": 954,
+        "selection_rate": 0.13417190775681342,
+        "tpr": 0.9461538461538461,
+        "fpr": 0.006067961165048544,
+        "f1": 0.9534883720930233,
+        "tp": 123,
+        "fp": 5,
+        "fn": 7,
+        "tn": 819
+       },
+       "Other": {
+        "n": 89,
+        "selection_rate": 0.1348314606741573,
+        "tpr": 1.0,
+        "fpr": 0.01282051282051282,
+        "f1": 0.9565217391304348,
+        "tp": 11,
+        "fp": 1,
+        "fn": 0,
+        "tn": 77
+       },
+       "White": {
+        "n": 8322,
+        "selection_rate": 0.25678923335736603,
+        "tpr": 0.965121834687052,
+        "fpr": 0.018783111253812813,
+        "f1": 0.9550827423167849,
+        "tp": 2020,
+        "fp": 117,
+        "fn": 73,
+        "tn": 6112
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     }
+    },
+    "worst_column": "race",
+    "per_column": {
+     "sex": {
+      "gap": 0.02611062077081494,
+      "lowest_group": "Female",
+      "lowest_f1": 0.9318181818181818,
+      "highest_group": "Male",
+      "highest_f1": 0.9579288025889967
+     },
+     "race": {
+      "gap": 0.1289355322338831,
+      "lowest_group": "Amer-Indian-Eskimo",
+      "lowest_f1": 0.8275862068965517,
+      "highest_group": "Other",
+      "highest_f1": 0.9565217391304348
+     }
+    },
+    "undefined_columns": {}
+   }
+  },
+  {
+   "id": "fairness.selection_rate_ratio",
+   "dimension": "model_behaviour",
+   "name": "Lowest/highest group selection rate (worst over sensitive attributes)",
+   "status": "WARN",
+   "evidence_source": "MEASURED",
+   "score": 39.85527591081207,
+   "raw_value": 0.35869748319730865,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 0.9,
+    "pass_at": 0.5,
+    "fail_at": 0.2,
+    "floor": 0.0
+   },
+   "required": true,
+   "message": "Lowest/highest group selection rate is 0.359 for 'sex': Female 11.1% vs Male 31.0%.",
+   "details": {
+    "min_group_size": 30,
+    "evaluated_columns": [
+     "race",
+     "sex"
+    ],
+    "skipped_columns": {},
+    "columns": {
+     "sex": {
+      "groups": {
+       "Female": {
+        "n": 3238,
+        "selection_rate": 0.11117974058060531,
+        "tpr": 0.9534883720930233,
+        "fpr": 0.0110573600552868,
+        "f1": 0.9318181818181818,
+        "tp": 328,
+        "fp": 32,
+        "fn": 16,
+        "tn": 2862
+       },
+       "Male": {
+        "n": 6530,
+        "selection_rate": 0.3099540581929556,
+        "tpr": 0.9653788258906172,
+        "fpr": 0.02204099625303064,
+        "f1": 0.9579288025889967,
+        "tp": 1924,
+        "fp": 100,
+        "fn": 69,
+        "tn": 4437
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     },
+     "race": {
+      "groups": {
+       "Amer-Indian-Eskimo": {
+        "n": 89,
+        "selection_rate": 0.1797752808988764,
+        "tpr": 0.9230769230769231,
+        "fpr": 0.05263157894736842,
+        "f1": 0.8275862068965517,
+        "tp": 12,
+        "fp": 4,
+        "fn": 1,
+        "tn": 72
+       },
+       "Asian-Pac-Islander": {
+        "n": 314,
+        "selection_rate": 0.2898089171974522,
+        "tpr": 0.9555555555555556,
+        "fpr": 0.022321428571428572,
+        "f1": 0.9502762430939227,
+        "tp": 86,
+        "fp": 5,
+        "fn": 4,
+        "tn": 219
+       },
+       "Black": {
+        "n": 954,
+        "selection_rate": 0.13417190775681342,
+        "tpr": 0.9461538461538461,
+        "fpr": 0.006067961165048544,
+        "f1": 0.9534883720930233,
+        "tp": 123,
+        "fp": 5,
+        "fn": 7,
+        "tn": 819
+       },
+       "Other": {
+        "n": 89,
+        "selection_rate": 0.1348314606741573,
+        "tpr": 1.0,
+        "fpr": 0.01282051282051282,
+        "f1": 0.9565217391304348,
+        "tp": 11,
+        "fp": 1,
+        "fn": 0,
+        "tn": 77
+       },
+       "White": {
+        "n": 8322,
+        "selection_rate": 0.25678923335736603,
+        "tpr": 0.965121834687052,
+        "fpr": 0.018783111253812813,
+        "f1": 0.9550827423167849,
+        "tp": 2020,
+        "fp": 117,
+        "fn": 73,
+        "tn": 6112
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     }
+    },
+    "worst_column": "sex",
+    "per_column": {
+     "sex": {
+      "ratio": 0.35869748319730865,
+      "parity_difference": 0.19877431761235026,
+      "lowest_group": "Female",
+      "highest_group": "Male",
+      "lowest_rate": 0.11117974058060531,
+      "highest_rate": 0.3099540581929556,
+      "vacuous_no_positive_predictions": false
+     },
+     "race": {
+      "ratio": 0.4629668025894441,
+      "parity_difference": 0.1556370094406388,
+      "lowest_group": "Black",
+      "highest_group": "Asian-Pac-Islander",
+      "lowest_rate": 0.13417190775681342,
+      "highest_rate": 0.2898089171974522,
+      "vacuous_no_positive_predictions": false
+     }
+    }
+   }
+  },
+  {
+   "id": "fairness.equalized_odds",
+   "dimension": "model_behaviour",
+   "name": "Equalized-odds difference (worst over sensitive attributes)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 88.14102564102565,
+   "raw_value": 0.07692307692307687,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.02,
+    "pass_at": 0.1,
+    "fail_at": 0.25,
+    "floor": 0.5
+   },
+   "required": false,
+   "message": "Equalized-odds difference is 0.077 for 'race' (true-positive-rate gap 0.077, false-positive-rate gap 0.047).",
+   "details": {
+    "min_group_size": 30,
+    "evaluated_columns": [
+     "race",
+     "sex"
+    ],
+    "skipped_columns": {},
+    "columns": {
+     "sex": {
+      "groups": {
+       "Female": {
+        "n": 3238,
+        "selection_rate": 0.11117974058060531,
+        "tpr": 0.9534883720930233,
+        "fpr": 0.0110573600552868,
+        "f1": 0.9318181818181818,
+        "tp": 328,
+        "fp": 32,
+        "fn": 16,
+        "tn": 2862
+       },
+       "Male": {
+        "n": 6530,
+        "selection_rate": 0.3099540581929556,
+        "tpr": 0.9653788258906172,
+        "fpr": 0.02204099625303064,
+        "f1": 0.9579288025889967,
+        "tp": 1924,
+        "fp": 100,
+        "fn": 69,
+        "tn": 4437
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     },
+     "race": {
+      "groups": {
+       "Amer-Indian-Eskimo": {
+        "n": 89,
+        "selection_rate": 0.1797752808988764,
+        "tpr": 0.9230769230769231,
+        "fpr": 0.05263157894736842,
+        "f1": 0.8275862068965517,
+        "tp": 12,
+        "fp": 4,
+        "fn": 1,
+        "tn": 72
+       },
+       "Asian-Pac-Islander": {
+        "n": 314,
+        "selection_rate": 0.2898089171974522,
+        "tpr": 0.9555555555555556,
+        "fpr": 0.022321428571428572,
+        "f1": 0.9502762430939227,
+        "tp": 86,
+        "fp": 5,
+        "fn": 4,
+        "tn": 219
+       },
+       "Black": {
+        "n": 954,
+        "selection_rate": 0.13417190775681342,
+        "tpr": 0.9461538461538461,
+        "fpr": 0.006067961165048544,
+        "f1": 0.9534883720930233,
+        "tp": 123,
+        "fp": 5,
+        "fn": 7,
+        "tn": 819
+       },
+       "Other": {
+        "n": 89,
+        "selection_rate": 0.1348314606741573,
+        "tpr": 1.0,
+        "fpr": 0.01282051282051282,
+        "f1": 0.9565217391304348,
+        "tp": 11,
+        "fp": 1,
+        "fn": 0,
+        "tn": 77
+       },
+       "White": {
+        "n": 8322,
+        "selection_rate": 0.25678923335736603,
+        "tpr": 0.965121834687052,
+        "fpr": 0.018783111253812813,
+        "f1": 0.9550827423167849,
+        "tp": 2020,
+        "fp": 117,
+        "fn": 73,
+        "tn": 6112
+       }
+      },
+      "excluded_small_groups": {},
+      "rows_missing_group": 0
+     }
+    },
+    "worst_column": "race",
+    "per_column": {
+     "sex": {
+      "equalized_odds_difference": 0.011890453797593903,
+      "tpr_difference": 0.011890453797593903,
+      "fpr_difference": 0.010983636197743838
+     },
+     "race": {
+      "equalized_odds_difference": 0.07692307692307687,
+      "tpr_difference": 0.07692307692307687,
+      "fpr_difference": 0.04656361778231988
+     }
+    },
+    "undefined_columns": {}
+   }
+  },
+  {
+   "id": "calibration.ece",
+   "dimension": "model_behaviour",
+   "name": "Expected calibration error",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.003247333839696331,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.01,
+    "pass_at": 0.05,
+    "fail_at": 0.1,
+    "floor": 0.25
+   },
+   "required": false,
+   "message": "Expected calibration error is 0.003 (Brier 0.019, 10 bins, 9768 rows). Average predicted probability 0.241 vs observed positive rate 0.239: close to the observed rate on average.",
+   "details": {
+    "ece": 0.003247333839696331,
+    "max_calibration_error": 0.2158476519690698,
+    "brier_score": 0.01906132725417997,
+    "mean_score": 0.2407740094865611,
+    "observed_positive_rate": 0.23925061425061425,
+    "bins": 10,
+    "n_rows": 9768,
+    "reliability": [
+     {
+      "lower": 0.0,
+      "upper": 0.1,
+      "n": 7193,
+      "mean_score": 0.006707797572547112,
+      "observed_rate": 0.007090226609203392,
+      "gap": 0.00038242903665628054
+     },
+     {
+      "lower": 0.1,
+      "upper": 0.2,
+      "n": 86,
+      "mean_score": 0.14063138594015012,
+      "observed_rate": 0.10465116279069768,
+      "gap": 0.03598022314945244
+     },
+     {
+      "lower": 0.2,
+      "upper": 0.3,
+      "n": 41,
+      "mean_score": 0.245165615001861,
+      "observed_rate": 0.1951219512195122,
+      "gap": 0.050043663782348785
+     },
+     {
+      "lower": 0.3,
+      "upper": 0.4,
+      "n": 36,
+      "mean_score": 0.3547365408579587,
+      "observed_rate": 0.1388888888888889,
+      "gap": 0.2158476519690698
+     },
+     {
+      "lower": 0.4,
+      "upper": 0.5,
+      "n": 28,
+      "mean_score": 0.4507970268809861,
+      "observed_rate": 0.42857142857142855,
+      "gap": 0.02222559830955756
+     },
+     {
+      "lower": 0.5,
+      "upper": 0.6,
+      "n": 39,
+      "mean_score": 0.5510348045175157,
+      "observed_rate": 0.6666666666666666,
+      "gap": 0.11563186214915089
+     },
+     {
+      "lower": 0.6,
+      "upper": 0.7,
+      "n": 44,
+      "mean_score": 0.6554713305402923,
+      "observed_rate": 0.6818181818181818,
+      "gap": 0.026346851277889494
+     },
+     {
+      "lower": 0.7,
+      "upper": 0.8,
+      "n": 67,
+      "mean_score": 0.755370654317378,
+      "observed_rate": 0.6716417910447762,
+      "gap": 0.08372886327260187
+     },
+     {
+      "lower": 0.8,
+      "upper": 0.9,
+      "n": 195,
+      "mean_score": 0.8618597169044527,
+      "observed_rate": 0.8615384615384616,
+      "gap": 0.00032125536599114657
+     },
+     {
+      "lower": 0.9,
+      "upper": 1.0,
+      "n": 2039,
+      "mean_score": 0.9745408732419447,
+      "observed_rate": 0.9725355566454145,
+      "gap": 0.002005316596530249
+     }
+    ],
+    "positive_label": ">50K"
+   }
+  },
+  {
+   "id": "operational.model_loadable",
+   "dimension": "operational_readiness",
+   "name": "Artifact exists and loads",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": true,
+   "message": "Model loaded as Pipeline.",
+   "details": {
+    "model_type": "Pipeline",
+    "load_warnings": [],
+    "model_sha256": "183c972dd6dd92e42f37c8d7bfd5c2607d4669a9c544fa06462e147d904f8d2f"
+   }
+  },
+  {
+   "id": "operational.input_schema",
+   "dimension": "operational_readiness",
+   "name": "Model predicts on the evaluation data schema",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": true,
+   "message": "Model predicted on 1000 evaluation rows using 13 feature columns.",
+   "details": {
+    "rows_tested": 1000,
+    "feature_columns": [
+     "age",
+     "workclass",
+     "fnlwgt",
+     "education",
+     "education-num",
+     "marital-status",
+     "occupation",
+     "relationship",
+     "capital-gain",
+     "capital-loss",
+     "hours-per-week",
+     "native-country",
+     "prior_high_income_flag"
+    ]
+   }
+  },
+  {
+   "id": "operational.prediction_determinism",
+   "dimension": "operational_readiness",
+   "name": "Repeated prediction on the same data gives identical output",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": false,
+   "message": "Repeated predictions on the same rows were identical.",
+   "details": {
+    "rows_tested": 1000,
+    "probabilities_checked": true
+   }
+  },
+  {
+   "id": "operational.malformed_input_handling",
+   "dimension": "operational_readiness",
+   "name": "Malformed input is rejected cleanly instead of crashing",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": true,
+   "direction": "binary",
+   "thresholds": {},
+   "required": false,
+   "message": "All 3 malformed-input cases were handled.",
+   "details": {
+    "cases": {
+     "missing_column_rejected": true,
+     "non_numeric_value_rejected": true,
+     "empty_input_handled": true
+    }
+   }
+  },
+  {
+   "id": "operational.artifact_size",
+   "dimension": "operational_readiness",
+   "name": "Model file size",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0073795318603515625,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 10.0,
+    "pass_at": 100.0,
+    "fail_at": 500.0,
+    "floor": 2000.0
+   },
+   "required": false,
+   "message": "Model file is 7.6 KB.",
+   "details": {
+    "bytes": 7738
+   }
+  },
+  {
+   "id": "operational.latency",
+   "dimension": "operational_readiness",
+   "name": "95th-percentile single-row prediction latency",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 4.322664991923375,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 10.0,
+    "pass_at": 50.0,
+    "fail_at": 200.0,
+    "floor": 1000.0
+   },
+   "required": false,
+   "message": "Single-row prediction p95 latency is 4.3 ms (p50 3.1 ms) over 50 calls.",
+   "details": {
+    "p50_ms": 3.1060499895829707,
+    "p95_ms": 4.322664991923375,
+    "p99_ms": 5.968018997373287,
+    "mean_ms": 3.3109239998157136,
+    "max_ms": 7.32869999774266,
+    "calls": 50,
+    "warmup_runs": 5,
+    "machine": {
+     "platform": "Windows-11-10.0.26200-SP0",
+     "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+     "cpu_count": 12,
+     "ram_gb": 15.6,
+     "versions": {
+      "python": "3.12.1",
+      "scikit_learn": "1.9.1",
+      "pandas": "3.0.6",
+      "numpy": "2.5.4",
+      "joblib": "1.6.0"
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.memory",
+   "dimension": "operational_readiness",
+   "name": "Memory increase when loading and predicting",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0078125,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 100.0,
+    "pass_at": 500.0,
+    "fail_at": 2000.0,
+    "floor": 8000.0
+   },
+   "required": false,
+   "message": "Loading the model and predicting on a small sample grew memory by 0 MB.",
+   "details": {
+    "note": "Resident-memory growth; noisy and includes library imports on first load.",
+    "machine": {
+     "platform": "Windows-11-10.0.26200-SP0",
+     "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+     "cpu_count": 12,
+     "ram_gb": 15.6,
+     "versions": {
+      "python": "3.12.1",
+      "scikit_learn": "1.9.1",
+      "pandas": "3.0.6",
+      "numpy": "2.5.4",
+      "joblib": "1.6.0"
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.dependency_match",
+   "dimension": "operational_readiness",
+   "name": "Share of declared library versions matching the current environment",
+   "status": "PASS",
+   "evidence_source": "DECLARED",
+   "score": 100.0,
+   "raw_value": 1.0,
+   "direction": "higher_is_better",
+   "thresholds": {
+    "target": 1.0,
+    "pass_at": 0.8,
+    "fail_at": 0.5,
+    "floor": 0.0
+   },
+   "required": false,
+   "message": "5 of 5 declared library versions match the current environment.",
+   "details": {
+    "comparisons": {
+     "python": {
+      "declared": "3.12.1",
+      "current": "3.12.1",
+      "match": true
+     },
+     "scikit_learn": {
+      "declared": "1.9.1",
+      "current": "1.9.1",
+      "match": true
+     },
+     "pandas": {
+      "declared": "3.0.6",
+      "current": "3.0.6",
+      "match": true
+     },
+     "numpy": {
+      "declared": "2.5.4",
+      "current": "2.5.4",
+      "match": true
+     },
+     "joblib": {
+      "declared": "1.6.0",
+      "current": "1.6.0",
+      "match": true
+     }
+    }
+   }
+  },
+  {
+   "id": "operational.model_file_safety",
+   "dimension": "operational_readiness",
+   "name": "Static scan of the model file for code references that loading would execute (0 only recognised libraries, 1 unrecognised code, 2 dangerous code)",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.0,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.0,
+    "pass_at": 0.0,
+    "fail_at": 1.0,
+    "floor": 2.0
+   },
+   "required": true,
+   "message": "The scan found 13 code references in the model file, all on the allowlist. This is a static scan, not a sandbox: it does not prove the file is safe, and only trusted files should be validated.",
+   "details": {
+    "verdict": "recognised only",
+    "dangerous": [],
+    "unrecognised": [],
+    "references": [
+     "builtins.slice",
+     "joblib.numpy_pickle.NumpyArrayWrapper",
+     "numpy._core.multiarray._reconstruct",
+     "numpy._core.multiarray.scalar",
+     "numpy.dtype",
+     "numpy.float64",
+     "numpy.ndarray",
+     "sklearn.compose._column_transformer.ColumnTransformer",
+     "sklearn.impute._base.SimpleImputer",
+     "sklearn.linear_model._logistic.LogisticRegression",
+     "sklearn.pipeline.Pipeline",
+     "sklearn.preprocessing._data.StandardScaler",
+     "sklearn.preprocessing._encoders.OneHotEncoder"
+    ],
+    "reference_count": 13,
+    "loaded": true,
+    "refuse_at": "unrecognised",
+    "file_bytes": 7738
+   }
+  },
+  {
+   "id": "operational.cpu_time",
+   "dimension": "operational_readiness",
+   "name": "CPU time the process spends predicting one row, from a batch of evaluation rows",
+   "status": "PASS",
+   "evidence_source": "MEASURED",
+   "score": 100.0,
+   "raw_value": 0.003958333333333334,
+   "direction": "lower_is_better",
+   "thresholds": {
+    "target": 0.05,
+    "pass_at": 0.5,
+    "fail_at": 3.0,
+    "floor": 10.0
+   },
+   "required": false,
+   "message": "Predicting 75000 rows used 0.30 s of process CPU time over 0.30 s of wall time: 0.004 ms of CPU per row (CPU/wall ratio 0.98; above 1 means several cores were busy).",
+   "details": {
+    "cpu_seconds": 0.296875,
+    "wall_seconds": 0.3024703999981284,
+    "rows_predicted": 75000,
+    "rounds": 75,
+    "rows_per_round": 1000,
+    "cpu_to_wall_ratio": 0.9815009997733232,
+    "machine": {
+     "platform": "Windows-11-10.0.26200-SP0",
+     "processor": "Intel64 Family 6 Model 186 Stepping 3, GenuineIntel",
+     "cpu_count": 12,
+     "ram_gb": 15.6,
+     "versions": {
+      "python": "3.12.1",
+      "scikit_learn": "1.9.1",
+      "pandas": "3.0.6",
+      "numpy": "2.5.4",
+      "joblib": "1.6.0"
+     }
+    },
+    "note": "Batch prediction, so it differs from the single-row latency check; depends on the machine and on other load."
+   }
+  }
+ ],
+ "scorecard": {
+  "dimensions": {
+   "training_validity": {
+    "dimension": "training_validity",
+    "score": 74.74052589103461,
+    "coverage": 1.0,
+    "provisional": false,
+    "available_checks": 7,
+    "total_checks": 7,
+    "note": null,
+    "contributions": [
+     {
+      "check_id": "training_validity.metadata_completeness",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.reproducibility_info",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.overfit_gap",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 20.0
+     },
+     {
+      "check_id": "training_validity.train_eval_overlap",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 99.38574938574938,
+      "treatment": "counted",
+      "points": 9.938574938574938
+     },
+     {
+      "check_id": "training_validity.eval_label_conflicts",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 10.0
+     },
+     {
+      "check_id": "training_validity.train_duplicate_rows",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 99.80663140533468,
+      "treatment": "counted",
+      "points": 9.98066314053347
+     },
+     {
+      "check_id": "leakage.single_feature_predictiveness",
+      "weight": 3.0,
+      "status": "FAIL",
+      "score": 16.070959373087337,
+      "treatment": "counted",
+      "points": 4.821287811926202
+     }
+    ]
+   },
+   "model_behaviour": {
+    "dimension": "model_behaviour",
+    "score": 86.5353630359934,
+    "coverage": 1.0,
+    "provisional": false,
+    "available_checks": 8,
+    "total_checks": 8,
+    "note": null,
+    "contributions": [
+     {
+      "check_id": "behaviour.f1",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 17.391304347826086
+     },
+     {
+      "check_id": "behaviour.roc_auc",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 17.391304347826086
+     },
+     {
+      "check_id": "behaviour.precision",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 8.695652173913043
+     },
+     {
+      "check_id": "behaviour.recall",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 8.695652173913043
+     },
+     {
+      "check_id": "behaviour.subgroup_f1_gap",
+      "weight": 1.0,
+      "status": "WARN",
+      "score": 77.30509745127436,
+      "treatment": "counted",
+      "points": 6.722182387067336
+     },
+     {
+      "check_id": "fairness.selection_rate_ratio",
+      "weight": 2.0,
+      "status": "WARN",
+      "score": 39.85527591081207,
+      "treatment": "counted",
+      "points": 6.931352332315142
+     },
+     {
+      "check_id": "fairness.equalized_odds",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 88.14102564102565,
+      "treatment": "counted",
+      "points": 7.6644370122631
+     },
+     {
+      "check_id": "calibration.ece",
+      "weight": 1.5,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.043478260869565
+     }
+    ]
+   },
+   "operational_readiness": {
+    "dimension": "operational_readiness",
+    "score": 100.0,
+    "coverage": 1.0,
+    "provisional": false,
+    "available_checks": 10,
+    "total_checks": 10,
+    "note": null,
+    "contributions": [
+     {
+      "check_id": "operational.model_loadable",
+      "weight": 3.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 20.0
+     },
+     {
+      "check_id": "operational.input_schema",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.333333333333334
+     },
+     {
+      "check_id": "operational.prediction_determinism",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.malformed_input_handling",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.artifact_size",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.latency",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.333333333333334
+     },
+     {
+      "check_id": "operational.memory",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.dependency_match",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     },
+     {
+      "check_id": "operational.model_file_safety",
+      "weight": 2.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 13.333333333333334
+     },
+     {
+      "check_id": "operational.cpu_time",
+      "weight": 1.0,
+      "status": "PASS",
+      "score": 100.0,
+      "treatment": "counted",
+      "points": 6.666666666666667
+     }
+    ]
+   }
+  },
+  "weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "effective_weights": {
+   "training_validity": 0.3,
+   "model_behaviour": 0.5,
+   "operational_readiness": 0.2
+  },
+  "mqs": 85.68983928530707,
+  "mqs_lower_bound": 85.68983928530707,
+  "overall_coverage": 1.0,
+  "provisional": false,
+  "missing_policy": "exclude_and_cap",
+  "mqs_sufficient_evidence": true,
+  "insufficient_evidence_reason": null
+ },
+ "decision": {
+  "decision": "ROLLBACK",
+  "action_mode": "RECOMMENDATION",
+  "mqs": 85.68983928530707,
+  "overridden_by_critical": true,
+  "triggered_rules": [
+   {
+    "rule_id": "target_leakage",
+    "name": "Target leakage detected",
+    "kind": "critical",
+    "effect": "ROLLBACK",
+    "reason": "Target leakage detected: check 'leakage.single_feature_predictiveness' is FAIL (The strongest single feature, 'prior_high_income_flag', reaches a cross-validated ROC AUC of 0.968 on its own (13 features, 9768 rows). Values near 1.0 suggest the feature leaks the label.).",
+    "observed": "FAIL",
+    "threshold": [
+     "FAIL"
+    ],
+    "check_ids": [
+     "leakage.single_feature_predictiveness"
+    ]
+   }
+  ],
+  "summary": "ROLLBACK recommended: a critical rule overrides the score. MQS 85.7. Reason(s): Target leakage detected."
+ },
+ "explanations": [
+  "Decision: ROLLBACK recommended: a critical rule overrides the score. MQS 85.7. Reason(s): Target leakage detected.",
+  "Why (critical): Target leakage detected: check 'leakage.single_feature_predictiveness' is FAIL (The strongest single feature, 'prior_high_income_flag', reaches a cross-validated ROC AUC of 0.968 on its own (13 features, 9768 rows). Values near 1.0 suggest the feature leaks the label.).",
+  "Override: critical rule(s) force ROLLBACK (Target leakage detected) although the MQS of 85.7 is above the promote threshold of 75. A good score cannot outweigh a critical failure.",
+  "Weakest checks (MQS points lost): leakage.single_feature_predictiveness (-7.6), fairness.selection_rate_ratio (-5.2), behaviour.subgroup_f1_gap (-1.0), fairness.equalized_odds (-0.5).",
+  "Evidence note: these results rely on declared (unverified) producer metadata: training_validity.overfit_gap, training_validity.train_eval_overlap, training_validity.train_duplicate_rows, operational.dependency_match.",
+  "Suggested action (leakage.single_feature_predictiveness): Inspect the named feature. If it is derived from the target or only known after the outcome, remove it and retrain.",
+  "Suggested action (behaviour.subgroup_f1_gap): Examine the weakest group: check its data volume and quality, and whether features behave differently for it.",
+  "Suggested action (fairness.selection_rate_ratio): Investigate the group gap: review training-data balance and proxy features, and consider mitigation (for example reweighting or group-aware thresholds).",
+  "These suggestions are starting points, not guarantees."
+ ]
+}

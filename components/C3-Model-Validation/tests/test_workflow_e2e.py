@@ -217,7 +217,8 @@ def test_the_consequence_follows_the_configuration(world):
     assert outcome["hidden_groups_critical"].decision == "ROLLBACK"       # critical (opt in)
     # scoring is affected the same way in all three; only the decision differs
     mqs = {p: o.result.scorecard.mqs for p, o in outcome.items()}
-    assert len({round(v, 6) for v in mqs.values()}) == 1
+    # equal up to the wall-clock latency/memory checks, which differ between runs
+    assert max(mqs.values()) - min(mqs.values()) < 0.5
     assert mqs["hidden_groups"] < default_case.result.scorecard.mqs
     # and each report names the rule that produced its recommendation
     assert "hidden_failure_groups_hold" in [r.rule_id for r in outcome["hidden_groups"].result.decision.triggered_rules]

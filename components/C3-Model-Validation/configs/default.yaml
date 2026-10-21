@@ -101,6 +101,14 @@ hidden_groups:
   consequence: score_only     # score_only | hold | critical
   require_assessment: false   # true: an UNAVAILABLE or ERROR result blocks PROMOTE (HOLD)
 
+# Model-file safety scan settings (used only when operational.model_file_safety is
+# enabled). A static allowlist is a heuristic, not a sandbox: docs/extended_checks.md.
+model_safety:
+  refuse_at: unrecognised     # dangerous | unrecognised | never: scan level at which the file is NOT loaded
+  # allowed_module_prefixes, blocked_module_prefixes, blocked_globals, allowed_builtins
+  # and blocked_builtins have built-in defaults (see src/mqvg/config.py); list them
+  # here to change them. A list given here replaces the default list.
+
 metadata:
   # Dotted names refer to nested fields of the training metadata.
   required_fields:
@@ -136,6 +144,17 @@ checks:
     weight: 1
     # Adult has ~0.12% natural duplicates; see docs/assumptions.md.
     thresholds: {target: 0.0, pass_at: 0.01, fail_at: 0.05, floor: 0.20}
+  training_validity.eval_label_conflicts:
+    # Extended check, OFF here so existing scores are unchanged; enable with
+    # configs/extended.yaml (docs/extended_checks.md). Placeholder thresholds.
+    enabled: false
+    weight: 1
+    thresholds: {target: 0.0, pass_at: 0.005, fail_at: 0.03, floor: 0.15}
+  training_validity.train_duplicate_rows:   # needs training row hashes
+    enabled: false        # extended check, see above
+    weight: 1
+    # Adult has ~0.06% natural duplicates in the sample training hashes.
+    thresholds: {target: 0.0, pass_at: 0.01, fail_at: 0.10, floor: 0.30}
   leakage.single_feature_predictiveness:
     weight: 3
     required: true        # measurable from the eval data alone
@@ -208,3 +227,13 @@ checks:
   operational.dependency_match:
     weight: 1
     thresholds: {target: 1.0, pass_at: 0.8, fail_at: 0.5, floor: 0.0}
+  operational.model_file_safety:
+    # Extended check, OFF here (see docs/extended_checks.md). The value is a severity:
+    # 0 = only recognised libraries, 1 = unrecognised code, 2 = dangerous code.
+    enabled: false
+    weight: 2
+    thresholds: {target: 0, pass_at: 0, fail_at: 1, floor: 2}
+  operational.cpu_time:
+    enabled: false        # extended check, see above; hardware dependent
+    weight: 1
+    thresholds: {target: 0.05, pass_at: 0.5, fail_at: 3.0, floor: 10.0}

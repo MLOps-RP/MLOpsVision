@@ -1,0 +1,70 @@
+# Extended profile: the default plus four additional checks.
+#
+#   training_validity.eval_label_conflicts   identical features, different label (evaluation data)
+#   training_validity.train_duplicate_rows   duplicate training rows (from the row hashes)
+#   operational.model_file_safety            static scan of the model file, BEFORE it is loaded
+#   operational.cpu_time                     CPU milliseconds per predicted row
+#
+# They are off in default.yaml because enabling them changes every model's TVS, ORS and
+# MQS. Thresholds are placeholders; see docs/extended_checks.md.
+#
+# Lists replace the default's list, so the default critical rules and must-pass
+# checks are restated in full, followed by what this profile adds.
+extends: default.yaml
+
+profile: extended
+description: Default checks plus conflicting labels, training duplicates, model-file safety and CPU time.
+
+decision:
+  promote_at: 75
+  reject_below: 50
+  must_pass_checks:
+    - training_validity.metadata_completeness
+    - training_validity.overfit_gap
+    - calibration.ece
+    - operational.latency
+    # added by this profile
+    - training_validity.eval_label_conflicts    # unreliable labels make every metric unreliable
+    - operational.model_file_safety             # unrecognised code (WARN) needs a person to review it
+
+critical_rules:
+  - id: model_not_loadable
+    name: Model artifact cannot be loaded
+    condition:
+      check: operational.model_loadable
+      status_in: [FAIL, ERROR]
+  - id: target_leakage
+    name: Target leakage detected
+    condition:
+      check: leakage.single_feature_predictiveness
+      status_in: [FAIL]
+  - id: severe_selection_rate_disparity
+    name: Severe selection-rate disparity between groups
+    condition:
+      check: fairness.selection_rate_ratio
+      status_in: [FAIL]
+  - id: performance_below_minimum
+    name: F1 below the absolute minimum
+    condition:
+      check: behaviour.f1
+      status_in: [FAIL]
+  # added by this profile
+  - id: unsafe_model_file
+    name: Model file references dangerous code
+    condition:
+      check: operational.model_file_safety
+      status_in: [FAIL]
+
+model_safety:
+  refuse_at: unrecognised     # code outside the allowlist is not loaded until a person trusts it
+
+checks:
+  training_validity.eval_label_conflicts:
+    enabled: true
+  training_validity.train_duplicate_rows:
+    enabled: true
+  operational.model_file_safety:
+    enabled: true
+    required: true            # a security check must not be silently skipped
+  operational.cpu_time:
+    enabled: true

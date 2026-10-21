@@ -40,6 +40,13 @@ CHECK_HINTS = {
         "Complete the training metadata; the check lists the missing fields.",
     "training_validity.reproducibility_info":
         "Record the random seed, library versions, data hash and code commit.",
+    "training_validity.eval_label_conflicts":
+        "Find the evaluation rows whose features repeat with different labels and "
+        "correct or remove them (or collect the missing distinguishing feature); "
+        "until then the measured metrics are unreliable.",
+    "training_validity.train_duplicate_rows":
+        "Deduplicate the training data and retrain; check how the duplicates "
+        "entered the pipeline.",
     "behaviour.f1": "Improve the model or features; compare against a simple baseline.",
     "behaviour.roc_auc": "Improve the model's ranking quality (features, model family).",
     "behaviour.precision": "Review the decision threshold and the false-positive cost.",
@@ -78,6 +85,12 @@ CHECK_HINTS = {
     "operational.latency":
         "Reduce model size or complexity, or validate on the target hardware.",
     "operational.memory": "Reduce model size, or validate on the target hardware.",
+    "operational.model_file_safety":
+        "Do not load this file. Re-export the model from its trusted training "
+        "environment; if its code is trusted, add its module to "
+        "model_safety.allowed_module_prefixes and review it.",
+    "operational.cpu_time":
+        "Reduce model size or complexity, or validate on the target hardware.",
     "operational.dependency_match":
         "Run with the same library versions the model was trained with.",
 }

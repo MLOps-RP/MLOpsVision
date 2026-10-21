@@ -431,7 +431,8 @@ def test_run_returns_enabled_checks_in_catalogue_order(candidate_with, default_c
     ids = [r.id for r in run_training_validity_checks(
         candidate_with(Scripted([0] * 10)), default_config)]
     assert ids == [s.id for s in CATALOGUE
-                   if s.dimension == Dimension.TRAINING_VALIDITY]
+                   if s.dimension == Dimension.TRAINING_VALIDITY
+                   and default_config.checks[s.id].enabled]
     config = make_config(lambda d: d["checks"][REPRO].update(enabled=False))
     assert REPRO not in {r.id for r in run_training_validity_checks(
         candidate_with(Scripted([0] * 10)), config)}

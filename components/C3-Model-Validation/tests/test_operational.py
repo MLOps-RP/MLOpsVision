@@ -91,7 +91,9 @@ def test_registry_matches_the_catalogue():
 def test_run_returns_one_valid_result_per_enabled_check(
         tiny_bundle, default_config):
     results = run_operational_checks(load_candidate(tiny_bundle), default_config)
-    assert [r.id for r in results] == OPERATIONAL_IDS
+    # the default profile leaves the extended checks off (see configs/extended.yaml)
+    assert [r.id for r in results] == [
+        i for i in OPERATIONAL_IDS if default_config.checks[i].enabled]
     assert all(r.dimension == Dimension.OPERATIONAL_READINESS for r in results)
 
 
@@ -99,7 +101,8 @@ def test_disabled_check_is_not_run(tiny_bundle, make_config):
     config = make_config(lambda d: d["checks"]["operational.memory"].update(
         enabled=False))
     ids = [r.id for r in run_operational_checks(load_candidate(tiny_bundle), config)]
-    assert "operational.memory" not in ids and len(ids) == len(OPERATIONAL_IDS) - 1
+    enabled = [i for i in OPERATIONAL_IDS if make_config().checks[i].enabled]
+    assert "operational.memory" not in ids and len(ids) == len(enabled) - 1
 
 
 def test_healthy_model_passes_every_check(tiny_bundle, make_config):
@@ -108,7 +111,7 @@ def test_healthy_model_passes_every_check(tiny_bundle, make_config):
                     "floor": 10000}))
     results = run_operational_checks(load_candidate(tiny_bundle), config)
     assert {r.id: r.status for r in results} == {
-        i: CheckStatus.PASS for i in OPERATIONAL_IDS}
+        i: CheckStatus.PASS for i in OPERATIONAL_IDS if config.checks[i].enabled}
     assert all(r.evidence_source in (EvidenceSource.MEASURED,
                                      EvidenceSource.DECLARED) for r in results)
 

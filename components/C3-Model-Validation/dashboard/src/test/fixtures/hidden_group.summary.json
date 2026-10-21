@@ -1,0 +1,35 @@
+{
+ "run_id": "7ec18704145b432b948f330d87444d02",
+ "candidate_id": "hidden_group",
+ "profile": "extended_hidden_groups",
+ "decision": "HOLD",
+ "action_mode": "RECOMMENDATION",
+ "summary": "HOLD: the model needs review before promotion. MQS 88.3. 1 issue(s): Hidden failure group found.",
+ "mqs": 88.28858555565068,
+ "mqs_lower_bound": 88.28858555565068,
+ "mqs_sufficient_evidence": true,
+ "overall_coverage": 1.0,
+ "provisional": false,
+ "dimension_scores": {
+  "training_validity": 100.0,
+  "model_behaviour": 76.57717111130135,
+  "operational_readiness": 100.0
+ },
+ "triggered_rules": [
+  {
+   "rule_id": "hidden_failure_groups_hold",
+   "kind": "blocking",
+   "effect": "HOLD",
+   "reason": "6 hidden failure group(s) found. The worst, 'segment = d AND tenure_years > 6.57 AND income_k > 57' (1.1% of rows), has an observed error rate of 76.5% against 27.0% expected (+49.5% points, 95% CI +33.0% to +60.6%, adjusted p 5.2e-10, found by tree and tested on held-out rows). Policy hidden_groups.consequence is 'hold': a confirmed group blocks promotion."
+  }
+ ],
+ "check_counts": {
+  "PASS": 24,
+  "WARN": 1,
+  "FAIL": 1
+ },
+ "created_at_utc": "2026-10-20T06:47:52.390548Z",
+ "result_url": "/v1/validations/7ec18704145b432b948f330d87444d02",
+ "report_url": "/v1/validations/7ec18704145b432b948f330d87444d02/report",
+ "notice": "This is a recommendation only. Nothing was deployed, promoted or rolled back."
+}
