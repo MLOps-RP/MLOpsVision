@@ -55,7 +55,7 @@ def load_input(state):
     cfg["cv_folds"] = state.get("folds") or cfg["cv_folds"]
     c1 = load_c1_output(state["dataset_id"])
     return {"cfg": cfg, "c1": c1.model_dump(mode="json"), "round": 1, "spaces": {},
-            "candidates": {}, "run_id": new_run_id(state["dataset_id"], "c2"),
+            "candidates": {}, "run_id": state.get("run_id") or new_run_id(state["dataset_id"], "c2"),
             "total_trials": state.get("total_trials") or cfg["budget"]["total_trials"]}
 
 

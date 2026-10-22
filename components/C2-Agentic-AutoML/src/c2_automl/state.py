@@ -15,9 +15,9 @@ class C2State(TypedDict, total=False):
     total_trials: int
     folds: int
     overrides: dict                           # optional config overrides (used for ablations)
+    run_id: str                               # optional: the API sets it so it can track the run
 
     # set by load_input / profile_task
-    run_id: str
     cfg: dict
     c1: dict                                  # C1Output as dict
     profile: dict                             # TaskProfile as dict
