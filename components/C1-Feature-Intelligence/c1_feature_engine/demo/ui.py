@@ -1,4 +1,4 @@
-"""Presentation layer for the C1 demo: light/dark theme, cards, stepper, HTML tables, feedback storage.
+"""Presentation layer for the web app: light/dark theme, cards, stepper, HTML tables, feedback storage.
 Pure UI - no engine or data logic lives here."""
 import html
 from datetime import datetime
@@ -8,11 +8,11 @@ import pandas as pd
 import streamlit as st
 
 PALETTES = {
-    "light": dict(bg="#F4F6FB", surface="#FFFFFF", surface2="#EEF2FA", text="#0F172A", muted="#5B6B82", border="#DDE3EE",
-                  primary="#4F46E5", primary2="#0891B2", success="#15803D", warn="#B45309", info="#1D4ED8",
-                  shadow="0 1px 2px rgba(15,23,42,.06), 0 6px 20px rgba(15,23,42,.06)", hero="linear-gradient(120deg,#4F46E5 0%,#0891B2 100%)"),
-    "dark": dict(bg="#0B1020", surface="#131A2E", surface2="#1B2440", text="#E8ECF8", muted="#9AA7C2", border="#26325A",
-                 primary="#818CF8", primary2="#22D3EE", success="#4ADE80", warn="#FBBF24", info="#60A5FA",
+    "light": dict(bg="#F3F6FC", surface="#FFFFFF", surface2="#F1F5FB", text="#0F172A", muted="#475569", border="#D5DDEB",
+                  primary="#4338CA", primary2="#0E7490", success="#15803D", warn="#B45309", danger="#B91C1C", info="#1D4ED8",
+                  shadow="0 1px 2px rgba(15,23,42,.05), 0 8px 24px rgba(30,41,90,.08)", hero="linear-gradient(120deg,#4338CA 0%,#0E7490 100%)"),
+    "dark": dict(bg="#0B1020", surface="#131A2E", surface2="#1B2440", text="#E8ECF8", muted="#A5B1CB", border="#2B3862",
+                 primary="#818CF8", primary2="#22D3EE", success="#4ADE80", warn="#FBBF24", danger="#F87171", info="#60A5FA",
                  shadow="0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35)", hero="linear-gradient(120deg,#3730A3 0%,#0E7490 100%)"),
 }
 
@@ -47,9 +47,14 @@ hr { border-color: var(--border); }
              background: var(--surface2); color: var(--muted); flex: none; }
 .step .t { font-weight: 600; font-size: .88rem; color: var(--text); line-height: 1.15; }
 .step .s { font-size: .75rem; color: var(--muted); }
+.step .st { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-top: 2px; }
+.step { opacity: .72; }
+.step.done { opacity: 1; border-color: color-mix(in srgb, var(--success) 45%, var(--border)); }
 .step.done .dot { background: var(--success); color: #fff; }
-.step.active { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
+.step.done .st { color: var(--success); }
+.step.active { opacity: 1; border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent); }
 .step.active .dot { background: var(--primary); color: #fff; }
+.step.active .st { color: var(--primary); }
 
 /* section headers + cards */
 .sec { display: flex; align-items: center; gap: 12px; margin: 4px 0 2px 0; }
@@ -78,6 +83,8 @@ table.c1 th { position: sticky; top: 0; background: var(--surface2); color: var(
               padding: 9px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; z-index: 1; }
 table.c1 td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: top; }
 table.c1 tr:last-child td { border-bottom: none; }
+table.c1 tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface2) 55%, transparent); }
+table.c1 td { word-break: break-word; line-height: 1.35; }
 table.c1 tbody tr:hover td { background: color-mix(in srgb, var(--primary) 7%, transparent); }
 table.c1 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .74rem; font-weight: 600; white-space: nowrap; }
@@ -106,7 +113,10 @@ table.c1 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 [role="option"]:hover, [role="option"][data-focused="true"], [role="option"][aria-selected="true"] { background: var(--surface2) !important; }
 [data-baseweb="popover"] ul, [data-baseweb="popover"] li { background: var(--surface) !important; color: var(--text) !important; }
 [data-baseweb="popover"] li:hover { background: var(--surface2) !important; }
-[data-testid="stExpander"] { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; }
+[data-testid="stExpander"] { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; margin: 6px 0; }
+[data-testid="stExpander"] summary { font-weight: 600; font-size: .92rem; padding: .55rem .9rem; }
+[data-testid="stSelectbox"] [data-baseweb="select"] > div { min-height: 42px; }
+[data-testid="stWidgetLabel"] p { font-size: .88rem; font-weight: 600; }
 [data-testid="stExpander"] summary, [data-testid="stExpander"] summary * { color: var(--text); }
 [data-testid="stStatus"], [data-testid="stStatusWidget"] { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; }
 [data-testid="stAlert"] { border-radius: 12px; background: color-mix(in srgb, var(--info) 11%, var(--surface)); color: var(--text); border: 1px solid var(--border); }
@@ -128,10 +138,57 @@ table.c1 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 [data-testid="stBaseButton-primary"]:hover, [data-testid="stDownloadButton"] button:hover { transform: translateY(-2px); filter: brightness(1.08); }
 [data-testid="stBaseButton-secondary"]:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--primary) 10%, var(--surface2)); }
 
+/* polish: widgets readable in both themes */
+.stApp [data-testid="stWidgetLabel"] p { color: var(--text); }
+[data-baseweb="select"] svg, [data-testid="stSelectbox"] svg { fill: var(--muted); color: var(--muted); }
+[data-baseweb="select"] > div:focus-within, textarea:focus, [data-testid="stSelectbox"] [role="group"]:focus-within {
+  border-color: var(--primary) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent) !important; }
+[data-testid="stFileUploaderDropzone"] button { background: var(--surface); border: 1px solid var(--primary); border-radius: 10px; }
+[data-testid="stFileUploaderDropzone"] button * { color: var(--primary) !important; }
+[data-testid="stFileUploaderDropzone"] small { color: var(--muted) !important; }
+[data-testid="stFileUploader"] [data-testid="stFileUploaderFile"] * { color: var(--text) !important; }
+[data-testid="stToggle"] label p, [data-testid="stRadio"] label p { color: var(--text) !important; }
+[data-testid="stStatus"] summary, [data-testid="stStatus"] * { color: var(--text); }
+[data-testid="stAlert"][kind="warning"], div[data-baseweb="notification"][kind="warning"] { background: color-mix(in srgb, var(--warn) 12%, var(--surface)); }
+[data-testid="stAlert"]:has([data-testid="stAlertContentWarning"]) { background: color-mix(in srgb, var(--warn) 12%, var(--surface)); border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+[data-testid="stAlert"]:has([data-testid="stAlertContentError"]) { background: color-mix(in srgb, var(--danger) 11%, var(--surface)); border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); }
+[data-testid="stAlert"]:has([data-testid="stAlertContentSuccess"]) { background: color-mix(in srgb, var(--success) 11%, var(--surface)); border-color: color-mix(in srgb, var(--success) 45%, var(--border)); }
+[data-testid="stCaptionContainer"] p { color: var(--muted); }
+.hero { position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,.10); }
+.card { position: relative; overflow: hidden; background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--border); }
+.card.accent::before { background: var(--primary); } .card.good::before { background: var(--success); } .card.warn::before { background: var(--warn); }
+.stepper .step { background: var(--surface); box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+.callout { background: color-mix(in srgb, var(--primary) 7%, var(--surface)); }
+.tbl-wrap { box-shadow: 0 1px 2px rgba(15,23,42,.04); }
+table.c1 th { color: var(--text); font-size: .76rem; text-transform: uppercase; letter-spacing: .04em; }
+*:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 @media (max-width: 720px) {
   .hero { padding: 18px; border-radius: 14px; } .sec-desc { margin-left: 0; } .card .v { font-size: 1.3rem; }
+  .step { flex-basis: 100%; } [data-testid="stDownloadButton"] button, [data-testid="stBaseButton-primary"] { width: 100%; }
   .block-container { padding-left: 1rem; padding-right: 1rem; }
 }
+"""
+
+
+_LIGHT_TABLES = """
+/* light-mode tables only (injected only when dark mode is off) */
+.tbl-title { font-size: .95rem; font-weight: 700; color: #1E293B; margin: 8px 0 8px 2px; }
+.tbl-wrap { border: 1px solid #D5DDEB; border-radius: 14px; background: #FFFFFF; scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+            box-shadow: 0 1px 2px rgba(15,23,42,.04), 0 6px 16px rgba(30,41,90,.06); }
+table.c1 { font-size: .85rem; border-collapse: separate; border-spacing: 0; min-width: 100%; width: max-content; }
+table.c1 th { background: #EEF2FF; color: #312E81; font-size: .73rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+              padding: 11px 14px; border-bottom: 2px solid #C7D2FE; white-space: normal; min-width: 90px; }
+table.c1 td { padding: 10px 14px; color: #1E293B; border-bottom: 1px solid #E8EDF6; line-height: 1.4; max-width: 340px;
+              overflow-wrap: anywhere; word-break: normal; }
+table.c1 tbody tr:nth-child(odd) td { background: #FFFFFF; }
+table.c1 tbody tr:nth-child(even) td { background: #F7F9FD; }
+table.c1 tbody tr:hover td { background: #EEF2FF; }
+table.c1 tbody tr:last-child td { border-bottom: none; }
+table.c1 td.num { text-align: right; font-variant-numeric: tabular-nums; color: #0F172A; font-weight: 500; }
+.pill { padding: 3px 11px; }
 """
 
 
@@ -144,7 +201,7 @@ def dark_default() -> bool:
 
 def inject_theme(dark: bool) -> None:
     p = PALETTES["dark" if dark else "light"]
-    css = ":root{" + "".join(f"--{k}:{v};" for k, v in p.items()) + "}" + _CSS
+    css = ":root{" + "".join(f"--{k}:{v};" for k, v in p.items()) + "}" + _CSS + ("" if dark else _LIGHT_TABLES)
     st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
 
 
@@ -153,7 +210,7 @@ def hero(title: str, subtitle: str, desc: str) -> None:
                 f'<div class="desc">{html.escape(desc)}</div></div>', unsafe_allow_html=True)
 
 
-STEPS = [("Upload", "Choose your CSV"), ("Overview", "Understand the data"), ("Optimize", "Run C1"), ("Export", "Download result")]
+STEPS = [("Upload", "Choose your CSV"), ("Overview", "Understand the data"), ("Optimize", "Run optimization"), ("Export", "Download result")]
 
 
 def stepper_html(stage: int) -> str:
@@ -161,8 +218,10 @@ def stepper_html(stage: int) -> str:
     out = []
     for i, (t, s) in enumerate(STEPS):
         cls = "done" if i < stage else ("active" if i == stage else "")
-        out.append(f'<div class="step {cls}"><div class="dot">{"✓" if i < stage else i + 1}</div>'
-                   f'<div><div class="t">{t}</div><div class="s">{s}</div></div></div>')
+        status = "Completed" if i < stage else ("In progress" if i == stage else "Upcoming")
+        cur = ' aria-current="step"' if i == stage else ""
+        out.append(f'<div class="step {cls}"{cur}><div class="dot">{"✓" if i < stage else i + 1}</div>'
+                   f'<div><div class="t">{t}</div><div class="s">{s}</div><div class="st">{status}</div></div></div>')
     return '<div class="stepper">' + "".join(out) + "</div>"
 
 
