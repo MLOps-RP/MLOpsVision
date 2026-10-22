@@ -95,23 +95,25 @@ if run:
             if kind == "profile":
                 status.write(f"✔ Dataset analysed: {value['n_rows']} records, {value['n_features']} features")
             elif kind == "stage":
-                status.write(f"▶ Preprocessing – **{name}**: testing {value}")
+                status.write(f"▶️ Preprocessing – **{name}**: testing {value}")
             elif kind == "score":
                 status.write(f"   · cross-validated score for {name} = {value}: {extra:.3f}")
             elif kind == "threshold":
                 status.write("   · prediction threshold scores: " + ", ".join(f"{k}={v:.3f}" for k, v in value.items()))
         res = core.run_c1(X, y, seed=core.CFG["seed"], on_event=on_event)
-        status.write("▶ Applying the selected data transformations…")
-        Z, origin = core.gap1_export(X, y, res["opts"], res["model"], core.CFG["seed"])
-        status.write(f"▶ Feature selection: generating, scoring and searching feature subsets among {Z.shape[1]} prepared columns "
+        status.write("▶️ Applying the selected data transformations…")
+        Z, origin = core.gap1_export(X, y, {**res["opts"], "scaler": "none"}, res["model"], core.CFG["seed"])
+        status.write(f"▶️ Feature selection: generating, scoring and searching feature subsets among {Z.shape[1]} prepared columns "
                      "(this can take a minute or more)…")
         g2 = core.run_gap2(Z, y, seed=core.CFG["seed"])
         eng = g2["eng"]
-        F = eng.transform(Z)                                    # the engine's own transform -> selected columns only
+        F = core.finish(eng.transform(Z))                                    # the engine's own transform -> selected columns only
         total = time.time() - t0
         status.update(label=f"Optimization finished in {total:.1f}s", state="complete", expanded=False)
+    Fin = core.with_target(F, y, classes, target)
+    n_dup = len(Fin) - len(core.dedupe(Fin))
     st.session_state["c1"] = {"sig": sig, "res": res, "Z": Z, "origin": origin, "eng": eng, "g2_s": g2["runtime_s"],
-                              "total_s": total, "F": core.with_target(F, y, classes, target)}
+                              "total_s": total, "F": core.dedupe(Fin), "n_dup": n_dup}
     st.toast("Optimization complete – scroll down for the results.", icon="✅")
 
 out = st.session_state.get("c1")
@@ -165,10 +167,10 @@ sel = core.selected_table(eng, origin)
 with st.container(border=True):
     ui.section(5, "Intelligent Feature Selection", "The most useful features kept from your data.")
     ui.cards([("Original Feature Count", n_orig, "columns you uploaded"),
-              ("Candidate Features Evaluated", n_pool, "prepared + generated"),
+              ("Candidate Features Evaluated", n_pool, "prepared columns"),
               ("Selected Feature Count", n_out, "kept", "accent"),
-              ("Removed Feature Count", n_pool - n_out, "candidates not selected"),
-              ("Feature Reduction", f"{red:.1f}%", "vs original count" + ("" if red >= 0 else " (negative: encoding / generated features)"),
+              ("Removed Feature Count", n_pool - n_out, "columns not selected"),
+              ("Feature Reduction", f"{red:.1f}%", "vs original count" + ("" if red >= 0 else " (negative: categories were encoded into several columns)"),
                "good" if red >= 0 else "warn")])
     unused = [c for c in orig_cols if c not in contrib]
     with st.expander(f"Uploaded columns not used by any selected feature ({len(unused)})"):
@@ -199,6 +201,7 @@ with st.container(border=True):
 # ------------------------------------------------------------------------------------------------ 7. export
 with st.container(border=True):
     ui.section(8, "Export Optimized Dataset", "Download the result as a CSV file.")
-    st.caption(f"CSV · {Fin.shape[0]:,} rows × {Fin.shape[1]} columns (selected features + target)")
+    st.caption(f"CSV · {Fin.shape[0]:,} rows × {Fin.shape[1]} columns (selected features + target)"
+               + (f" · {out['n_dup']:,} duplicate rows removed (rows that became identical after unselected columns were dropped)" if out["n_dup"] else ""))
     st.download_button("⬇ Download Optimized CSV", Fin.to_csv(index=False).encode("utf-8"),
                        file_name=f"{up.name.rsplit('.', 1)[0]}_optimized.csv", mime="text/csv")

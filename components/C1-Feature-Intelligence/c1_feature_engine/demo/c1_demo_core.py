@@ -179,7 +179,8 @@ def preprocessing_table(res: dict) -> pd.DataFrame:
         if st not in res["scores"] and st not in res["proposed"]:
             method, kind = f"{method} (not needed for this data)", "Not applied"
         elif st in ("clean", "imputer", "encoder", "scaler"):
-            kind = "Not applied" if v == "none" else "Data transformation (included in the exported file)"
+            kind = ("Not applied" if v == "none" else "Used for model scoring only (exported file keeps original units)"
+                    if st == "scaler" else "Data transformation (included in the exported file)")
         elif st == "balancer":
             kind = {"none": "Not applied", "class_weight": "Training-time operation (model setting, not in the file)"}.get(
                 v, "Training-time operation (resampling during model training, not in the file)")
@@ -202,6 +203,13 @@ def transform_dataset(X: pd.DataFrame, y: np.ndarray, opts: dict, model: str, se
     Z = tr.fit_transform(X, y)
     names = [n.split("__", 1)[-1] for n in tr.named_steps["pre"].get_feature_names_out()]
     return pd.DataFrame(np.asarray(Z, dtype=float), columns=names)
+
+
+def friendly(name: str) -> str:
+    """Readable output column names: `missingindicator_X` -> `X_was_missing`, `X___rare__` -> `X_other` (grouped rare categories)."""
+    if name.startswith("missingindicator_"):
+        return name[len("missingindicator_"):] + "_was_missing"
+    return name[:-len("___rare__")] + "_other" if name.endswith("___rare__") else name
 
 
 def gap1_export(X: pd.DataFrame, y: np.ndarray, opts: dict, model: str, seed: int = 42):
@@ -227,8 +235,8 @@ def gap1_export(X: pd.DataFrame, y: np.ndarray, opts: dict, model: str, seed: in
                 hit = [c for c in cols if short == c or short == "missingindicator_" + c or short.startswith(c + "_")]
                 owners.append(max(hit, key=len) if hit else "?")
         origin.update({n.split("__", 1)[1]: o for n, o in zip(names, owners)})
-    Zdf = pd.DataFrame(np.asarray(Z, dtype=float), columns=[n.split("__", 1)[-1] for n in full])
-    return Zdf, origin
+    Zdf = pd.DataFrame(np.asarray(Z, dtype=float), columns=[friendly(n.split("__", 1)[-1]) for n in full])
+    return Zdf, {friendly(k): v for k, v in origin.items()}
 
 
 # --------------------------------------------------------------------------------------------------
@@ -253,48 +261,6 @@ def gap2_strategy(eng) -> str:
             f"(population {ga['pop']}, ≤{ga['gens']} generations, seeded from FQS, seed {eng.seed})")
 
 
-# Readable names for the transformations in c1.generation (op key in the engine's lineage -> (technique, family, how it is built))
-_GEN_OPS = {
-    "log1p": ("Log transform", "Mathematical (single column)", "log(1 + x), only when the column has no negative values"),
-    "sqrt": ("Square root", "Mathematical (single column)", "√x, only when the column has no negative values"),
-    "square": ("Square", "Mathematical (single column)", "x²"),
-    "quantile_bin": ("Quantile binning", "Binning (single column)", "values grouped into quantile-based bins"),
-    "ratio": ("Ratio", "Interaction (two columns)", "a ÷ b"),
-    "product": ("Product", "Interaction (two columns)", "a × b"),
-    "diff": ("Difference", "Interaction (two columns)", "a − b"),
-    "sum": ("Sum", "Interaction (two columns)", "a + b"),
-    "freq_enc": ("Frequency encoding", "Categorical encoding", "how common each category is"),
-    "target_enc": ("Target encoding", "Categorical encoding", "smoothed target rate per category (out-of-fold on training rows)"),
-    "grp_mean": ("Group mean", "Group statistic", "mean of a numeric column within each category"),
-    "grp_std": ("Group std. deviation", "Group statistic", "spread of a numeric column within each category"),
-}
-
-
-def feature_engineering_report(eng, Z: pd.DataFrame) -> dict:
-    """Everything the 'Automated Feature Engineering' section shows, read from the engine object that actually ran:
-    eng.gen_ (the FeatureGenerator), its fitted settings, eng.lineage_ and eng.G_ (the candidate pool).
-    `Z` is the matrix that was passed to eng.fit (= the generator's input). The only recomputation is the generator's own
-    `_build` on `Z` with its already-fitted statistics, to learn how many candidates it created before its de-duplication."""
-    gen = eng.gen_
-    n_in = Z.shape[1]
-    if gen is None:
-        return {"enabled": False, "n_input": n_in, "n_pool": eng.G_.shape[1], "generated": pd.DataFrame(), "techniques": pd.DataFrame()}
-    kept = list(gen.keep_)
-    built = list(gen._build(Z)[0].columns)
-    rows = [(n, _GEN_OPS.get(eng.lineage_[n]["op"], (eng.lineage_[n]["op"],))[0], ", ".join(eng.lineage_[n]["parents"]))
-            for n in kept]
-    gen_df = pd.DataFrame(rows, columns=["Generated Feature Name", "Transformation Type", "Source Columns"])
-    ops_kept = pd.Series([eng.lineage_[n]["op"] for n in kept], dtype=object).value_counts()
-    tech = []
-    for op, (name, fam, how) in _GEN_OPS.items():
-        if op in ops_kept.index:
-            tech.append({"Technique": name, "Family": fam, "How it is built": how, "Features created": int(ops_kept[op])})
-    return {"enabled": True, "n_input": n_in, "n_pool": eng.G_.shape[1], "n_built": len(built), "kept": kept,
-            "removed": [n for n in built if n not in set(kept)], "generated": gen_df,
-            "techniques": pd.DataFrame(tech), "top_cols": list(gen.top_), "n_cat_seen": len(gen.cat_),
-            "settings": {"top_n": gen.top_n, "cap": gen.cap, "corr_thr": gen.thr}}
-
-
 def selected_table(eng, origin: dict) -> pd.DataFrame:
     rows = []
     for f in eng.feature_scores_:
@@ -305,5 +271,26 @@ def selected_table(eng, origin: dict) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def finish(F: pd.DataFrame) -> pd.DataFrame:
+    """Make the exported features CSV-safe: generated ratios are NaN where the denominator is 0 (fine for LightGBM inside the
+    engine, not for a user's file) and explode near 0, so fill NaN with the column median and clip to the 0.1-99.9% range."""
+    F = F.fillna(F.median()).fillna(0)
+    return F.clip(F.quantile(0.001), F.quantile(0.999), axis=1)
+
+
 def with_target(Z: pd.DataFrame, y: np.ndarray, classes: list[str], target: str) -> pd.DataFrame:
     return Z.assign(**{target: np.asarray(classes, dtype=object)[y]})
+
+
+def feature_engineering_report(eng, Z: pd.DataFrame) -> dict:
+    """What the engine's generation step did, read from the engine object that ran (empty report when generation is off)."""
+    if eng.gen_ is None:
+        return {"enabled": False, "n_input": Z.shape[1], "n_pool": eng.G_.shape[1]}
+    built = eng.gen_._build(Z)[0].columns
+    return {"enabled": True, "n_input": Z.shape[1], "n_pool": eng.G_.shape[1], "n_built": len(built), "kept": list(eng.gen_.keep_),
+            "removed": [c for c in built if c not in eng.gen_.keep_], "top_cols": list(eng.gen_.top_)}
+
+
+def dedupe(F: pd.DataFrame) -> pd.DataFrame:
+    """Drop rows that became identical (features + target) once unselected columns were removed; they carry no extra information."""
+    return F.drop_duplicates().reset_index(drop=True)
