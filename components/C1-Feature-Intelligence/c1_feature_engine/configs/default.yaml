@@ -1,0 +1,9 @@
+seed: 42
+outer_folds: 5
+inner_folds: 3
+metric: f1_macro          # primary metric (RESEARCH R8)
+max_candidates: 3         # rule shortlist cap per stage
+anchor_imputer: median    # always evaluated so adaptive can't do worse than the default by construction
+anchor_balancer: none
+max_rows: 10000           # stratified row cap for experiments (NFR5: large-data path is Sprint 5)
+rules: configs/rules.yaml

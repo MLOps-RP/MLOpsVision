@@ -1,0 +1,17 @@
+# Profile -> shortlist. All `when` keys are DatasetProfile fields (ANDed). Ops: lt le gt ge eq.
+# Earlier rules rank first; shortlist = deduped union capped at max_candidates.
+imputation:
+  - {name: informative_missing, when: {missing_ratio: {gt: 0}, miss_target_assoc: {ge: 0.1}}, propose: [median_ind]}
+  - {name: mar_signal,          when: {missing_ratio: {gt: 0}, mar_signal: {ge: 0.3}},        propose: [mice, knn]}
+  - {name: complete,            when: {missing_ratio: {le: 0}},                                propose: [median]}
+  - {name: low_missing,         when: {missing_ratio: {gt: 0, lt: 0.05}},                      propose: [median, mean]}
+  - {name: mid_missing_small,   when: {missing_ratio: {ge: 0.05, lt: 0.2}, n_rows: {le: 10000}}, propose: [median, knn, mice]}
+  - {name: mid_missing_large,   when: {missing_ratio: {ge: 0.05, lt: 0.2}, n_rows: {gt: 10000}}, propose: [median, knn]}
+  - {name: high_missing,        when: {missing_ratio: {ge: 0.2}},                              propose: [median_ind, median, knn]}
+balancing:
+  - {name: balanced,       when: {imbalance_ratio: {lt: 1.5}},                                                   propose: [none]}
+  - {name: mild,           when: {imbalance_ratio: {ge: 1.5, lt: 5}},                                            propose: [none, class_weight]}
+  - {name: extreme,        when: {imbalance_ratio: {ge: 20}, min_class_count: {ge: 30}},                         propose: [class_weight, adasyn]}
+  - {name: strong_numeric, when: {imbalance_ratio: {ge: 5}, frac_categorical: {le: 0.5}, min_class_count: {ge: 30}}, propose: [class_weight, smote, smote_tomek]}
+  - {name: strong_categ,   when: {imbalance_ratio: {ge: 5}, frac_categorical: {gt: 0.5}, min_class_count: {ge: 30}}, propose: [class_weight, smote_nc, none]}
+  - {name: tiny_minority,  when: {imbalance_ratio: {ge: 5}, min_class_count: {lt: 30}},                          propose: [class_weight, none]}
