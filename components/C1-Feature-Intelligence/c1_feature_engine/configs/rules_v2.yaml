@@ -1,0 +1,17 @@
+# Model-aware rules for the Gap 1 v2 stages (imputer/balancer reuse rules.yaml). Extra profile keys come from v2.extra_profile.
+clean:
+  - {name: junk_or_rare, when: {n_junk_cols: {ge: 1}},                        propose: [clean]}
+  - {name: rare_levels,  when: {n_rare_cols: {ge: 1}},                        propose: [clean]}
+  - {name: tidy,         when: {n_junk_cols: {lt: 1}, n_rare_cols: {lt: 1}},  propose: [none]}
+encoder:
+  - {name: linear_highcard, when: {is_linear: {eq: 1}, max_card: {gt: 10}}, propose: [target, onehot]}
+  - {name: linear_lowcard,  when: {is_linear: {eq: 1}, max_card: {le: 10}}, propose: [onehot, ordinal]}
+  - {name: tree_highcard,   when: {is_linear: {eq: 0}, max_card: {gt: 10}}, propose: [ordinal, target, onehot]}
+  - {name: tree_lowcard,    when: {is_linear: {eq: 0}, max_card: {le: 10}}, propose: [onehot, ordinal]}
+scaler:
+  - {name: linear_skewed, when: {is_linear: {eq: 1}, mean_abs_skew: {ge: 1}}, propose: [power, standard]}
+  - {name: linear,        when: {is_linear: {eq: 1}},                         propose: [standard, power]}
+  - {name: tree_invariant, when: {is_linear: {eq: 0}},                        propose: [standard]}
+threshold:
+  - {name: imbalanced, when: {is_binary: {eq: 1}, imbalance_ratio: {ge: 1.5}}, propose: [tuned, "0.5"]}
+  - {name: balanced,   when: {is_binary: {eq: 1}, imbalance_ratio: {lt: 1.5}}, propose: ["0.5"]}
